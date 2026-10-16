@@ -3,8 +3,10 @@ package com.snakeid.platform
 import android.graphics.Bitmap
 import android.util.Log
 import com.snakeid.domain.Identification
+import com.snakeid.domain.ModelCatalog
 import com.snakeid.domain.ModelLabels
 import com.snakeid.domain.Prediction
+import com.snakeid.domain.ResultKind
 import org.tensorflow.lite.Interpreter
 import java.io.File
 import java.io.FileInputStream
@@ -17,6 +19,9 @@ actual class SnakeClassifier actual constructor() {
     private val labels: List<String>
     private val inputBuffer: ByteBuffer?
     private val inputSize = 224
+    private val store = ModelStore()
+    private var wideModel: WideSnakeModel? = null
+    private var activeModelId = ModelCatalog.QUICK
     private var closed = false
 
     init {
@@ -53,8 +58,22 @@ actual class SnakeClassifier actual constructor() {
                 ).let { listOf(it) }
             } else {
                 val primary = infer(active, buffer, pixels, mobilenetScaling = true)
-                val secondary = infer(active, buffer, pixels, mobilenetScaling = false)
-                Identification.fromScores(primary, secondary, labels)
+                val guardBitmap = letterbox(decoded, 127)
+                val guardScaled = Bitmap.createScaledBitmap(guardBitmap, inputSize, inputSize, true)
+                val guardPixels = IntArray(inputSize * inputSize)
+                guardScaled.getPixels(guardPixels, 0, inputSize, 0, 0, inputSize, inputSize)
+                if (guardScaled !== guardBitmap) guardScaled.recycle()
+                guardBitmap.recycle()
+                // Gray letterbox, pixels / 255. On the M21 this is the pass that
+                // rejects the bundled flower. Stretch /255 does not.
+                val secondary = infer(active, buffer, guardPixels, mobilenetScaling = false)
+                val quick = Identification.fromScores(primary, secondary, labels)
+                val wide = wideModel
+                if (wide == null || activeModelId != ModelCatalog.WIDE || quick.first().kind == ResultKind.NO_SNAKE) {
+                    quick
+                } else {
+                    wide.classify(pixels)
+                }
             }
         } catch (error: Exception) {
             Log.e(TAG, "Inference failed", error)
@@ -65,12 +84,52 @@ actual class SnakeClassifier actual constructor() {
         }
     }
 
+    actual fun activate(modelId: String): String? = synchronized(this) {
+        if (closed) return "The identifier is closed."
+        if (modelId == ModelCatalog.QUICK) {
+            wideModel?.close()
+            wideModel = null
+            activeModelId = ModelCatalog.QUICK
+            store.rememberActive(ModelCatalog.QUICK)
+            return null
+        }
+        val offer = ModelCatalog.byId(modelId) ?: return "That model is not in the catalog."
+        if (!store.isReady(offer.id)) return "Download the wide catalog before choosing it."
+        return try {
+            val labelText = appContext.assets.open("models/snakesense_labels.tsv").bufferedReader().use { it.readText() }
+            val loaded = WideSnakeModel(store.modelFile(offer.id), labelText)
+            wideModel?.close()
+            wideModel = loaded
+            activeModelId = offer.id
+            store.rememberActive(offer.id)
+            null
+        } catch (error: Exception) {
+            Log.e(TAG, "Could not open the wide model", error)
+            wideModel?.close()
+            wideModel = null
+            activeModelId = ModelCatalog.QUICK
+            store.rememberActive(ModelCatalog.QUICK)
+            "The wide model could not be opened. The quick model is still selected."
+        }
+    }
+
     actual fun close() {
         synchronized(this) {
             if (closed) return
             closed = true
+            wideModel?.close()
+            wideModel = null
             interpreter?.close()
         }
+    }
+
+    private fun letterbox(source: Bitmap, pad: Int): Bitmap {
+        val side = maxOf(source.width, source.height)
+        val canvas = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+        val draw = android.graphics.Canvas(canvas)
+        draw.drawColor(android.graphics.Color.rgb(pad, pad, pad))
+        draw.drawBitmap(source, (side - source.width) / 2f, (side - source.height) / 2f, null)
+        return canvas
     }
 
     private fun infer(

@@ -3,12 +3,12 @@ package com.snakeid.domain
 /**
  * Turns two model score vectors into a result the UI can show safely.
  *
- * The network was trained as a Keras MobileNetV2. Its species head is most
- * accurate when pixels are scaled to [-1, 1]. That same scaling calls a flower
- * a Russell's viper at very high confidence. A second pass scaled to [0, 1]
- * does fire the "No snake found" class on that photo, and it stays near zero
- * on the bundled snake photos. The second pass is used only as a non-snake
- * guard. Species names always come from the [-1, 1] pass.
+ * Species scores use a stretched photo scaled to [-1, 1]. That pass is what
+ * names the bundled cobra, krait, Russell's viper, and green vine on a phone.
+ * It also calls the bundled flower a Russell's viper. A second pass, the same
+ * photo letterboxed on gray and scaled to [0, 1], returns "No snake found"
+ * for that flower and does not do so for those snake photos. Measured on a
+ * Galaxy M21. The second pass is only a non-snake guard.
  */
 object Identification {
     const val NON_SNAKE_GUARD = 0.45f

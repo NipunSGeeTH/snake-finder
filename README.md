@@ -12,7 +12,7 @@ It is not a medical device. A bite is an emergency even when the app says the sn
 - Shows venom status, look-alikes, and a field guide for 19 species. The guide is larger than the model. The camera cannot name every species in the guide.
 - Stores identification history on the phone.
 
-It does not download extra model packs. Earlier builds pretended a failed download was a 100-species or 1,784-species model. Those files were not real weights, so that path was removed.
+The Model tab can download a second, real network: SnakeSense, 135 species, MIT license, hosted on this repository's `models` release. The 14-class model stays in the APK and works with no connection. A failed download is not replaced with a stand-in file.
 
 ## Project layout
 

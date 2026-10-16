@@ -1,0 +1,136 @@
+index	scientific	common	poisonous
+0	Carphophis amoenus	Common Worm Snake	0
+1	Carphophis vermis	Western Worm Snake	0
+2	Causus rhombeatus	Rhombic Night Adder	1
+3	Cemophora coccinea	Scarlet Snake	0
+4	Charina bottae	Rubber Boa	0
+5	Chrysopelea ornata	Ornate Flying Snake	0
+6	Clonophis kirtlandii	Kirtland's Snake	0
+7	Contia tenuis	Sharp-tailed Snake	0
+8	Corallus caninus	Emerald Tree Boa	0
+9	Corallus hortulanus	Amazon Tree Boa	0
+10	Coronella girondica	Southern Smooth Snake	0
+11	Crotalus adamanteus	Eastern Diamondback Rattlesnake	1
+12	Crotalus atrox	Western Diamondback Rattlesnake	1
+13	Crotalus cerastes	Sidewinder	1
+14	Crotalus cerberus	Arizona Black Rattlesnake	1
+15	Crotalus lepidus	Rock Rattlesnake	1
+16	Crotalus molossus	Black-tailed Rattlesnake	1
+17	Agkistrodon contortrix	Copperhead	1
+18	Crotalus ornatus	Ornate Black-tailed Rattlesnake	1
+19	Crotalus ruber	Red Diamond Rattlesnake	1
+20	Crotalus scutulatus	Mojave Rattlesnake	1
+21	Crotalus stephensi	Panamint Rattlesnake	1
+22	Crotalus tigris	Tiger Rattlesnake	1
+23	Crotalus triseriatus	Mexican Dusky Rattlesnake	1
+24	Crotalus viridis	Prairie Rattlesnake	1
+25	Crotaphopeltis hotamboeia	Red-lipped Snake	0
+26	Agkistrodon piscivorus	Cottonmouth	1
+27	Daboia russelii	Russell's Viper	1
+28	Dendrelaphis pictus	Painted Bronzeback	0
+29	Dendrelaphis punctulatus	Green Tree Snake	0
+30	Dendroaspis polylepis	Black Mamba	1
+31	Diadophis punctatus	Ring-necked Snake	0
+32	Drymarchon couperi	Eastern Indigo Snake	0
+33	Ahaetulla nasuta	Long-nosed Whip Snake	0
+34	Elaphe dione	Dione's Rat Snake	0
+35	Ahaetulla prasina	Oriental Whip Snake	0
+36	Epicrates cenchria	Rainbow Boa	0
+37	Eunectes murinus	Green Anaconda	0
+38	Farancia abacura	Mud Snake	0
+39	Gonyosoma oxycephalum	Red-tailed Green Rat Snake	0
+40	Hemorrhois hippocrepis	Horseshoe Whip Snake	0
+41	Heterodon nasicus	Western Hognose Snake	0
+42	Heterodon simus	Eastern Hognose Snake	0
+43	Hierophis viridiflavus	Green Whip Snake	0
+44	Hypsiglena torquata	Night Snake	0
+45	Imantodes cenchoa	Blunt-headed Tree Snake	0
+46	Lampropeltis alterna	Gray-banded Kingsnake	0
+47	Lampropeltis calligaster	Prairie Kingsnake	0
+48	Lampropeltis getula	Eastern Kingsnake	0
+49	Lampropeltis pyromelana	Sonoran Mountain Kingsnake	0
+50	Lampropeltis triangulum	Milk Snake	0
+51	Lampropeltis zonata	California Mountain Kingsnake	0
+52	Laticauda colubrina	Yellow-lipped Sea Krait	1
+53	Leptodeira annulata	Banded Cat-eyed Snake	0
+54	Leptophis ahaetulla	Parrot Snake	0
+55	Leptophis diplotropis	Pacific Coast Parrot Snake	0
+56	Leptophis mexicanus	Green Parrot Snake	0
+57	Arizona elegans	Glossy Snake	0
+58	Lycodon capucinus	Common Wolf Snake	0
+59	Aspidites melanocephalus	Black-headed Python	0
+60	Malpolon monspessulanus	Montpellier Snake	1
+61	Masticophis bilineatus	Sonoran Whipsnake	0
+62	Masticophis lateralis	California Whipsnake	0
+63	Masticophis schotti	Schott's Whipsnake	0
+64	Masticophis taeniatus	Striped Whipsnake	0
+65	Micrurus fulvius	Eastern Coral Snake	1
+66	Micrurus tener	Texas Coral Snake	1
+67	Morelia spilota	Carpet Python	0
+68	Morelia viridis	Green Tree Python	0
+69	Naja atra	Chinese Cobra	1
+70	Naja naja	Indian Cobra	1
+71	Naja nivea	Cape Cobra	1
+72	Natrix maura	Viperine Snake	0
+73	Nerodia cyclopion	Green Water Snake	0
+74	Nerodia floridana	Florida Green Water Snake	0
+75	Atractus crassicaudatus	Thickhead Ground Snake	0
+76	Nerodia taxispilota	Brown Water Snake	0
+77	Ninia sebae	Redbacked Coffee Snake	0
+78	Opheodrys aestivus	Rough Green Snake	0
+79	Ophiophagus hannah	King Cobra	1
+80	Oxybelis aeneus	Brown Vine Snake	0
+81	Oxyuranus scutellatus	Coastal Taipan	1
+82	Austrelaps superbus	Lowland Copperhead	1
+83	Bitis arietans	Puff Adder	1
+84	Phyllorhynchus decurtatus	Spotted Leaf-nosed Snake	0
+85	Pituophis catenifer	Gopher Snake	0
+86	Pituophis deppei	Deppe's Pine Snake	0
+87	Protobothrops mucrosquamatus	Brown Spotted Pit Viper	1
+88	Psammodynastes pulverulentus	Mock Viper	0
+89	Bitis gabonica	Gabon Viper	1
+90	Pseudaspis cana	Cape Wolf Snake	0
+91	Pseudechis australis	King Brown Snake	1
+92	Pseudechis porphyriacus	Red-bellied Black Snake	1
+93	Pseudonaja textilis	Eastern Brown Snake	1
+94	Boa constrictor	Boa Constrictor	0
+95	Python molurus	Indian Python	0
+96	Python regius	Ball Python	0
+97	Regina septemvittata	Queen Snake	0
+98	Rhabdophis subminiatus	Red-necked Keelback	1
+99	Rhabdophis tigrinus	Tiger Keelback	1
+100	Rhadinaea flavilata	Pine Woods Snake	0
+101	Rhinocheilus lecontei	Long-nosed Snake	0
+102	Salvadora grahamiae	Mountain Patch-nosed Snake	0
+103	Salvadora hexalepis	Western Patch-nosed Snake	0
+104	Senticolis triaspis	Green Rat Snake	0
+105	Bogertophis subocularis	Trans-Pecos Rat Snake	0
+106	Sistrurus catenatus	Massasauga	1
+107	Sistrurus miliarius	Pygmy Rattlesnake	1
+108	Spilotes pullatus	Chicken Snake	0
+109	Tantilla coronata	Southeastern Crowned Snake	0
+110	Tantilla gracilis	Flathead Snake	0
+111	Tantilla hobartsmithi	Southwestern Blackhead Snake	0
+112	Tantilla planiceps	Western Blackhead Snake	0
+113	Thamnophis atratus	Aquatic Garter Snake	0
+114	Thamnophis couchii	Western Aquatic Garter Snake	0
+115	Thamnophis cyrtopsis	Black-necked Garter Snake	0
+116	Thamnophis marcianus	Checkered Garter Snake	0
+117	Thamnophis ordinoides	Northwestern Garter Snake	0
+118	Thamnophis proximus	Western Ribbon Snake	0
+119	Thamnophis radix	Plains Garter Snake	0
+120	Boiga irregularis	Brown Tree Snake	1
+121	Trimeresurus stejnegeri	Chinese Green Tree Viper	1
+122	Boiga kraepelini	Kraepelin's Cat Snake	0
+123	Tropidoclonion lineatum	Lined Snake	0
+124	Tropidolaemus subannulatus	Temple Viper	1
+125	Tropidolaemus wagleri	Wagler's Pit Viper	1
+126	Vipera ammodytes	Nose-horned Viper	1
+127	Vipera aspis	Asp Viper	1
+128	Vipera seoanei	Seoane's Viper	1
+129	Virginia valeriae	Smooth Earth Snake	0
+130	Xenochrophis piscator	Checkered Keelback	0
+131	Bothriechis schlegelii	Eyelash Viper	1
+132	Bothrops asper	Fer-de-Lance	1
+133	Bothrops atrox	Common Lancehead	1
+134	Bungarus multicinctus	Many-banded Krait	1

@@ -38,6 +38,7 @@ kotlin {
             implementation("androidx.core:core-ktx:1.13.1")
             implementation("androidx.exifinterface:exifinterface:1.3.7")
             implementation(libs.tensorflow.lite)
+            implementation("com.microsoft.onnxruntime:onnxruntime-android:1.19.2")
         }
     }
 }

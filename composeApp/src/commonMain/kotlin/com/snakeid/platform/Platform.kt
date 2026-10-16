@@ -15,8 +15,19 @@ expect fun rememberImagePicker(onImagePicked: (ByteArray) -> Unit): ImagePickerL
 
 expect class SnakeClassifier() {
     fun classify(imageBytes: ByteArray): List<Prediction>
+    fun activate(modelId: String): String?
     fun close()
 }
+
+expect class ModelStore() {
+    fun activeId(): String
+    fun isReady(modelId: String): Boolean
+    fun modelFile(modelId: String): String
+    suspend fun download(modelId: String, onProgress: (Int) -> Unit)
+    fun delete(modelId: String)
+}
+
+expect fun bundledText(assetPath: String): String
 
 expect class HistoryStore() {
     fun load(): List<ScanRecord>

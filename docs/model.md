@@ -42,9 +42,9 @@ The field guide also describes hump-nosed pit viper, green pit viper, rock pytho
 
 ## Two scalings
 
-Species scores use MobileNet scaling, `(channel - 127.5) / 127.5`. On the bundled samples that scaling is the one that names the cobra, krait, Russell's viper, and green vine correctly.
+Species scores use a photo stretched to 224×224 and scaled with `(channel - 127.5) / 127.5`. On a Galaxy M21 that pass names the cobra, krait, Russell's viper, and green vine samples correctly.
 
-The same scaling scores the bundled flower as Russell's viper at about 0.99. A second pass, `channel / 255`, scores that flower as "No snake found" at about 0.55, and scores the bundled snake photos near zero for that class. The app therefore trusts the second pass only as a gate:
+The same pass scores the bundled flower as Russell's viper at about 0.99. Stretching that flower and dividing by 255 does not fix it on the phone. Placing the photo on a gray square, then scaling with `channel / 255`, scores the flower as "No snake found" at about 0.79 and does not do that to the bundled snake photos. The app uses that second pass only as a gate:
 
 - If the `[0, 1]` pass tops out at "No snake found" with confidence at least 0.45, the result is "no snake".
 - Otherwise the `[-1, 1]` pass supplies the ranking.

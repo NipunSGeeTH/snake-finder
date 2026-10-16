@@ -35,10 +35,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.snakeid.domain.ModelCatalog
 import com.snakeid.domain.Prediction
 import com.snakeid.domain.SnakeSpecies
+import com.snakeid.domain.parseWideLabels
 import com.snakeid.history.ScanHistory
+import com.snakeid.platform.ModelStore
 import com.snakeid.platform.SnakeClassifier
+import com.snakeid.platform.bundledText
 import com.snakeid.platform.loadBundledSample
 import com.snakeid.platform.rememberImagePicker
 import com.snakeid.ui.EmergencyScreen
@@ -64,10 +68,18 @@ private enum class AppTab(val title: String, val icon: String) {
 @Composable
 fun App() {
     val classifier = remember { SnakeClassifier() }
+    val modelStore = remember { ModelStore() }
     DisposableEffect(classifier) {
         onDispose { classifier.close() }
     }
     val history = remember { ScanHistory() }
+    val wideLabels = remember { parseWideLabels(bundledText("models/snakesense_labels.tsv")) }
+    var activeModelId by remember { mutableStateOf(modelStore.activeId()) }
+    var readyIds by remember { mutableStateOf(ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()) }
+    var downloadId by remember { mutableStateOf<String?>(null) }
+    var downloadPercent by remember { mutableStateOf(0) }
+    var switchingModel by remember { mutableStateOf(false) }
+    var modelError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(AppTab.IDENTIFY) }
     var imageBytes by remember { mutableStateOf<ByteArray?>(null) }
@@ -125,7 +137,11 @@ fun App() {
                             Spacer(Modifier.width(10.dp))
                             Column {
                                 Text(tabTitle(tab), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                                Text("Offline · 14-class model", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                Text(
+                                    if (activeModelId == ModelCatalog.WIDE) "Wide catalog · 135 species" else "Offline · 14-class model",
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontSize = 11.sp
+                                )
                             }
                         }
                     },
@@ -195,7 +211,52 @@ fun App() {
                     )
                     AppTab.GUIDE -> FieldGuideScreen(onSelectSpecies = { speciesDialog = it })
                     AppTab.EMERGENCY -> EmergencyScreen()
-                    AppTab.MODEL -> ModelScreen()
+                    AppTab.MODEL -> ModelScreen(
+                        activeId = activeModelId,
+                        readyIds = readyIds,
+                        downloadId = downloadId,
+                        downloadPercent = downloadPercent,
+                        switching = switchingModel,
+                        error = modelError,
+                        wideLabels = wideLabels,
+                        onDownload = { modelId ->
+                            modelError = null
+                            downloadId = modelId
+                            downloadPercent = 0
+                            scope.launch {
+                                val result = runCatching {
+                                    modelStore.download(modelId) { percent -> downloadPercent = percent }
+                                }
+                                downloadId = null
+                                readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()
+                                result.onFailure { failure ->
+                                    modelError = failure.message ?: "The download failed."
+                                }
+                            }
+                        },
+                        onSelect = { modelId ->
+                            modelError = null
+                            switchingModel = true
+                            scope.launch {
+                                val message = withContext(Dispatchers.Default) { classifier.activate(modelId) }
+                                switchingModel = false
+                                if (message == null) {
+                                    activeModelId = modelStore.activeId()
+                                } else {
+                                    modelError = message
+                                    activeModelId = modelStore.activeId()
+                                }
+                            }
+                        },
+                        onDelete = { modelId ->
+                            modelStore.delete(modelId)
+                            readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()
+                            scope.launch {
+                                classifier.activate(ModelCatalog.QUICK)
+                                activeModelId = ModelCatalog.QUICK
+                            }
+                        }
+                    )
                     AppTab.HISTORY -> HistoryScreen(
                         records = history.records,
                         onClear = { history.clear() },

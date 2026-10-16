@@ -40,7 +40,12 @@ The steps are: move away, keep the person still, splint the limb without a tight
 
 ## Model
 
-The Model tab describes the single built-in network and lists its 14 classes in label order. It is there so you can see what the camera is allowed to say. There is no download button.
+The Model tab is where you choose the network.
+
+- **Quick South Asia** is already installed. It has 14 classes and a "no snake" class. It needs no network.
+- **Wide catalog** is a 171 MB download of the SnakeSense model, 135 species. It needs a network once. After that it runs on the phone. The common krait is not one of those 135 names. The wide network always picks a species, so the app still asks the quick model whether the photo contains a snake before it shows a wide-catalog name.
+
+Delete removes the downloaded file and returns to the quick model.
 
 ## History
 
