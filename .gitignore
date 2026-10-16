@@ -1,0 +1,34 @@
+# Build outputs
+.gradle/
+.kotlin/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.aab
+*.dex
+output.json
+
+# Local machine
+local.properties
+*.iml
+.idea/
+.DS_Store
+Thumbs.db
+
+# Signing keys
+*.jks
+*.keystore
+*.keystore.properties
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Logs and profiler
+*.log
+*.hprof
