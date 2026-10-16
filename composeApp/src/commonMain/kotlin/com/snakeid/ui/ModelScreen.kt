@@ -49,7 +49,7 @@ fun ModelScreen(
     ) {
         item {
             Text(
-                "Choose the network used for the next photo. The quick model is already on the phone. The wide catalog is a separate file, downloaded once.",
+                "Every photo is checked first by a snake-or-not model. A phone, a flower, or another object does not get a species name. Only a photo that passes that check is sent to the quick model or the wide catalog.",
                 color = Color.LightGray,
                 fontSize = 13.sp
             )

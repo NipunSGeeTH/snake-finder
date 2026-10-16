@@ -23,6 +23,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,6 +112,16 @@ fun App() {
                 if (requestId == requestIds[0]) busy = false
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        val saved = modelStore.activeId()
+        if (saved == ModelCatalog.QUICK) return@LaunchedEffect
+        switchingModel = true
+        val message = withContext(Dispatchers.Default) { classifier.activate(saved) }
+        switchingModel = false
+        activeModelId = modelStore.activeId()
+        if (message != null) modelError = message
     }
 
     val picker = rememberImagePicker { bytes -> identify(bytes, "Photo") }

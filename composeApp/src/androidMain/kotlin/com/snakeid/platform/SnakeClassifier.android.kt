@@ -7,6 +7,7 @@ import com.snakeid.domain.ModelCatalog
 import com.snakeid.domain.ModelLabels
 import com.snakeid.domain.Prediction
 import com.snakeid.domain.ResultKind
+import com.snakeid.domain.SnakeGate
 import org.tensorflow.lite.Interpreter
 import java.io.File
 import java.io.FileInputStream
@@ -17,6 +18,8 @@ import java.nio.channels.FileChannel
 actual class SnakeClassifier actual constructor() {
     private val interpreter: Interpreter?
     private val labels: List<String>
+    private val gateInterpreter: Interpreter?
+    private val gateLabels: List<String>
     private val inputBuffer: ByteBuffer?
     private val inputSize = 224
     private val store = ModelStore()
@@ -28,6 +31,9 @@ actual class SnakeClassifier actual constructor() {
         val loaded = loadInterpreter()
         interpreter = loaded?.first
         labels = loaded?.second ?: emptyList()
+        val gate = loadGate()
+        gateInterpreter = gate?.first
+        gateLabels = gate?.second ?: emptyList()
         inputBuffer = if (interpreter != null) {
             ByteBuffer.allocateDirect(4 * inputSize * inputSize * 3).order(ByteOrder.nativeOrder())
         } else {
@@ -38,7 +44,8 @@ actual class SnakeClassifier actual constructor() {
     actual fun classify(imageBytes: ByteArray): List<Prediction> = synchronized(this) {
         val active = interpreter
         val buffer = inputBuffer
-        if (closed || active == null || buffer == null || labels.isEmpty()) {
+        val gate = gateInterpreter
+        if (closed || active == null || buffer == null || labels.isEmpty() || gate == null || gateLabels.isEmpty()) {
             return listOf(Identification.unavailable("The on-device model is not loaded."))
         }
         val decoded = decodeOrientedBitmap(imageBytes, maxSide = 1024)
@@ -51,13 +58,21 @@ actual class SnakeClassifier actual constructor() {
         return try {
             val pixels = IntArray(inputSize * inputSize)
             scaled.getPixels(pixels, 0, inputSize, 0, 0, inputSize, inputSize)
+            val presence = SnakeGate.decide(
+                infer(gate, buffer, pixels, mobilenetScaling = true, outputSize = gateLabels.size),
+                gateLabels
+            )
+            Log.i(TAG, "snake gate mass=${presence.snakeMass} top=${presence.topLabel} ${presence.topScore}")
+            if (!presence.isSnake) {
+                return listOf(Identification.notASnake(presence.topLabel))
+            }
             val outputCount = active.getOutputTensor(0).numElements()
             if (outputCount != labels.size) {
                 Identification.unavailable(
                     "The model has $outputCount outputs and the label file has ${labels.size} lines."
                 ).let { listOf(it) }
             } else {
-                val primary = infer(active, buffer, pixels, mobilenetScaling = true)
+                val primary = infer(active, buffer, pixels, mobilenetScaling = true, outputSize = labels.size)
                 val guardBitmap = letterbox(decoded, 127)
                 val guardScaled = Bitmap.createScaledBitmap(guardBitmap, inputSize, inputSize, true)
                 val guardPixels = IntArray(inputSize * inputSize)
@@ -66,7 +81,7 @@ actual class SnakeClassifier actual constructor() {
                 guardBitmap.recycle()
                 // Gray letterbox, pixels / 255. On the M21 this is the pass that
                 // rejects the bundled flower. Stretch /255 does not.
-                val secondary = infer(active, buffer, guardPixels, mobilenetScaling = false)
+                val secondary = infer(active, buffer, guardPixels, mobilenetScaling = false, outputSize = labels.size)
                 val quick = Identification.fromScores(primary, secondary, labels)
                 val wide = wideModel
                 if (wide == null || activeModelId != ModelCatalog.WIDE || quick.first().kind == ResultKind.NO_SNAKE) {
@@ -119,6 +134,7 @@ actual class SnakeClassifier actual constructor() {
             closed = true
             wideModel?.close()
             wideModel = null
+            gateInterpreter?.close()
             interpreter?.close()
         }
     }
@@ -132,11 +148,30 @@ actual class SnakeClassifier actual constructor() {
         return canvas
     }
 
+    private fun loadGate(): Pair<Interpreter, List<String>>? {
+        val labels = try {
+            appContext.assets.open("models/imagenet_labels.txt").bufferedReader().useLines { lines ->
+                lines.map { it.trim() }.filter { it.isNotEmpty() }.toList()
+            }
+        } catch (error: Exception) {
+            Log.e(TAG, "Could not read the snake-or-not labels", error)
+            return null
+        }
+        val model = mapAsset("models/snake_gate.tflite") ?: return null
+        return try {
+            Interpreter(model, Interpreter.Options().apply { setNumThreads(4) }) to labels
+        } catch (error: Exception) {
+            Log.e(TAG, "Could not open the snake-or-not model", error)
+            null
+        }
+    }
+
     private fun infer(
         active: Interpreter,
         buffer: ByteBuffer,
         pixels: IntArray,
-        mobilenetScaling: Boolean
+        mobilenetScaling: Boolean,
+        outputSize: Int
     ): FloatArray {
         buffer.rewind()
         for (pixel in pixels) {
@@ -154,7 +189,7 @@ actual class SnakeClassifier actual constructor() {
             }
         }
         buffer.rewind()
-        val output = Array(1) { FloatArray(labels.size) }
+        val output = Array(1) { FloatArray(outputSize) }
         active.run(buffer, output)
         return output[0]
     }
@@ -166,7 +201,7 @@ actual class SnakeClassifier actual constructor() {
         }
         val labels = loadLabels()
         if (labels.isEmpty()) return null
-        val model = mapModel() ?: return null
+        val model = mapAsset(MODEL_ASSET) ?: return null
         return try {
             val options = Interpreter.Options().apply { setNumThreads(4) }
             Interpreter(model, options) to labels
@@ -188,9 +223,9 @@ actual class SnakeClassifier actual constructor() {
         return fromAsset.ifEmpty { ModelLabels.labels }
     }
 
-    private fun mapModel(): ByteBuffer? {
+    private fun mapAsset(assetPath: String): ByteBuffer? {
         try {
-            appContext.assets.openFd(MODEL_ASSET).use { descriptor ->
+            appContext.assets.openFd(assetPath).use { descriptor ->
                 FileInputStream(descriptor.fileDescriptor).channel.use { channel ->
                     return channel.map(
                         FileChannel.MapMode.READ_ONLY,
@@ -203,9 +238,9 @@ actual class SnakeClassifier actual constructor() {
             Log.w(TAG, "Could not map the model asset directly. Copying it into app storage.", error)
         }
         return try {
-            val file = File(appContext.filesDir, "snake_model.tflite")
+            val file = File(appContext.filesDir, assetPath.substringAfterLast('/'))
             if (!file.exists() || file.length() < 100_000) {
-                appContext.assets.open(MODEL_ASSET).use { input ->
+                appContext.assets.open(assetPath).use { input ->
                     file.outputStream().use { output -> input.copyTo(output) }
                 }
             }
@@ -213,7 +248,7 @@ actual class SnakeClassifier actual constructor() {
                 channel.map(FileChannel.MapMode.READ_ONLY, 0, file.length())
             }
         } catch (error: Exception) {
-            Log.e(TAG, "Could not load models/snake_model.tflite", error)
+            Log.e(TAG, "Could not load $assetPath", error)
             null
         }
     }

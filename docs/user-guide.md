@@ -40,7 +40,9 @@ The steps are: move away, keep the person still, splint the limb without a tight
 
 ## Model
 
-The Model tab is where you choose the network.
+Every photo is checked first by a separate snake-or-not model (ImageNet MobileNet). If that check does not see a snake, the app shows no species. The species networks run only after that check passes.
+
+The Model tab is where you choose the species network.
 
 - **Quick South Asia** is already installed. It has 14 classes and a "no snake" class. It needs no network.
 - **Wide catalog** is a 171 MB download of the SnakeSense model, 135 species. It needs a network once. After that it runs on the phone. The common krait is not one of those 135 names. The wide network always picks a species, so the app still asks the quick model whether the photo contains a snake before it shows a wide-catalog name.

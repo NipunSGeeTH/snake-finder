@@ -48,6 +48,25 @@ object Identification {
         return speciesScores.map { score -> speciesPrediction(score, uncertain) }
     }
 
+    fun notASnake(closestLabel: String): Prediction {
+        val closest = if (closestLabel.isBlank()) {
+            "It did not match a snake."
+        } else {
+            "The closest everyday match was $closestLabel."
+        }
+        return Prediction(
+            kind = ResultKind.NO_SNAKE,
+            speciesId = null,
+            scientificName = "",
+            commonName = "Not a snake",
+            confidence = 0f,
+            venomStatus = VenomStatus.NON_VENOMOUS,
+            dangerLevel = 0,
+            uncertain = false,
+            advice = "This photo was not recognized as a snake, so no species name is shown. $closest $PHOTO_LIMIT"
+        )
+    }
+
     fun unreadableImage(): Prediction {
         return unavailable("This image could not be read. Use a JPEG or PNG photo of the whole snake.")
     }
