@@ -1,0 +1,101 @@
+name: Build and publish APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the bundled model on the sample photos
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ai-edge-litert pillow numpy
+          mkdir -p dist
+          python scripts/check_model.py | tee dist/model-check.txt
+
+      - name: Unit tests
+        run: chmod +x gradlew && ./gradlew :composeApp:testDebugUnitTest --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew :androidApp:assembleDebug --stacktrace
+
+      - name: Collect APK, tests, and sample photos
+        if: always()
+        run: |
+          mkdir -p dist/tests
+          if [ -f androidApp/build/outputs/apk/debug/androidApp-debug.apk ]; then
+            cp androidApp/build/outputs/apk/debug/androidApp-debug.apk dist/snakeid-debug.apk
+          fi
+          cp -r composeApp/build/test-results/testDebugUnitTest/. dist/tests/ || true
+          cp -r composeApp/build/reports/tests/testDebugUnitTest dist/tests/html || true
+          (cd androidApp/src/main/assets && zip -r "$GITHUB_WORKSPACE/dist/sample-photos.zip" samples)
+          (cd dist && zip -r unit-tests.zip tests)
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: snakeid-debug-apk
+          path: dist/snakeid-debug.apk
+          if-no-files-found: error
+
+      - name: Upload test results and sample photos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snakeid-test-files
+          path: |
+            dist/model-check.txt
+            dist/unit-tests.zip
+            dist/sample-photos.zip
+          if-no-files-found: warn
+
+      - name: Publish GitHub release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Debug APK for SnakeID. It contains the built-in 14-class offline model only. Install with: adb install -r snakeid-debug.apk. Also attached: unit-test report, model check log, and the six sample photos."
+          if gh release view latest-apk >/dev/null 2>&1; then
+            gh release upload latest-apk \
+              dist/snakeid-debug.apk \
+              dist/unit-tests.zip \
+              dist/model-check.txt \
+              dist/sample-photos.zip \
+              --clobber
+            gh release edit latest-apk --notes "$NOTES" --latest
+          else
+            gh release create latest-apk \
+              dist/snakeid-debug.apk \
+              dist/unit-tests.zip \
+              dist/model-check.txt \
+              dist/sample-photos.zip \
+              --title "SnakeID latest debug APK" \
+              --notes "$NOTES" \
+              --latest \
+              --target main
+          fi

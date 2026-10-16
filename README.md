@@ -46,6 +46,10 @@ adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
 
 The model file must stay uncompressed in the APK. `androidApp/build.gradle.kts` sets `noCompress` for `tflite`. Compressing it makes `AssetManager.openFd` fail and the identifier will report that the model is not loaded.
 
+## Download a built APK
+
+Pushes to `main` run `.github/workflows/android.yml`. That workflow checks the six sample photos, runs the unit tests, builds `snakeid-debug.apk`, and publishes it on the [latest-apk release](https://github.com/NipunSGeeTH/snake-finder/releases/tag/latest-apk) together with the test report and the sample photos. The same files are also kept as workflow artifacts.
+
 ## Check the bundled model
 
 From a Python environment with `ai-edge-litert`, `numpy`, and `pillow`:
