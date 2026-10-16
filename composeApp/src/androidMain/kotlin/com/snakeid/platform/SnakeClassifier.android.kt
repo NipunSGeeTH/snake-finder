@@ -73,16 +73,9 @@ actual class SnakeClassifier actual constructor() {
                 ).let { listOf(it) }
             } else {
                 val primary = infer(active, buffer, pixels, mobilenetScaling = true, outputSize = labels.size)
-                val guardBitmap = letterbox(decoded, 127)
-                val guardScaled = Bitmap.createScaledBitmap(guardBitmap, inputSize, inputSize, true)
-                val guardPixels = IntArray(inputSize * inputSize)
-                guardScaled.getPixels(guardPixels, 0, inputSize, 0, 0, inputSize, inputSize)
-                if (guardScaled !== guardBitmap) guardScaled.recycle()
-                guardBitmap.recycle()
-                // Gray letterbox, pixels / 255. On the M21 this is the pass that
-                // rejects the bundled flower. Stretch /255 does not.
-                val secondary = infer(active, buffer, guardPixels, mobilenetScaling = false, outputSize = labels.size)
-                val quick = Identification.fromScores(primary, secondary, labels)
+                // The ImageNet gate already decided this is a snake. Do not let the
+                // small model's "no snake" class overrule that and hide a real animal.
+                val quick = Identification.fromScores(primary, primary, labels)
                 val wide = wideModel
                 if (wide == null || activeModelId != ModelCatalog.WIDE || quick.first().kind == ResultKind.NO_SNAKE) {
                     quick
@@ -137,15 +130,6 @@ actual class SnakeClassifier actual constructor() {
             gateInterpreter?.close()
             interpreter?.close()
         }
-    }
-
-    private fun letterbox(source: Bitmap, pad: Int): Bitmap {
-        val side = maxOf(source.width, source.height)
-        val canvas = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
-        val draw = android.graphics.Canvas(canvas)
-        draw.drawColor(android.graphics.Color.rgb(pad, pad, pad))
-        draw.drawBitmap(source, (side - source.width) / 2f, (side - source.height) / 2f, null)
-        return canvas
     }
 
     private fun loadGate(): Pair<Interpreter, List<String>>? {

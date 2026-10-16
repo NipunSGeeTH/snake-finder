@@ -69,3 +69,4 @@ Perfect scores on a few samples do not mean the model is reliable in the field. 
 ## Replacing the model
 
 A replacement has to be a float32 TFLite file with input `[1, 224, 224, 3]` and a softmax over the same label lines, in the same order. Put it at `androidApp/src/main/assets/models/snake_model.tflite`, keep the asset uncompressed, and rerun `scripts/check_model.py`. If the training pipeline used a different scale than MobileNet `[-1, 1]`, change `SnakeClassifier` and the check script together. The non-snake guard is specific to this file; a new model needs its own measurement before that gate is kept.
+ge
