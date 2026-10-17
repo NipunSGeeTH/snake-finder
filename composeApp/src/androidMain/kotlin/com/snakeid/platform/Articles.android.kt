@@ -6,22 +6,38 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-actual suspend fun fetchText(url: String): String = withContext(Dispatchers.IO) {
-    val connection = URL(url).openConnection() as HttpURLConnection
-    connection.instanceFollowRedirects = true
-    connection.connectTimeout = 20_000
-    connection.readTimeout = 20_000
-    connection.setRequestProperty("User-Agent", "SnakeID")
-    connection.setRequestProperty("Accept", "application/json, text/markdown, text/plain")
+actual suspend fun fetchBytes(url: String): ByteArray = withContext(Dispatchers.IO) {
+    val connection = open(url)
     try {
-        connection.connect()
-        if (connection.responseCode !in 200..299) {
-            error("Article request returned HTTP ${connection.responseCode}")
-        }
+        connection.inputStream.use { it.readBytes() }
+    } finally {
+        connection.disconnect()
+    }
+}
+
+actual suspend fun fetchText(url: String): String = withContext(Dispatchers.IO) {
+    val connection = open(url)
+    try {
         connection.inputStream.bufferedReader().use { it.readText() }
     } finally {
         connection.disconnect()
     }
+}
+
+private fun open(url: String): HttpURLConnection {
+    val connection = URL(url).openConnection() as HttpURLConnection
+    connection.instanceFollowRedirects = true
+    connection.connectTimeout = 20_000
+    connection.readTimeout = 20_000
+    connection.setRequestProperty("User-Agent", "Ophia")
+    connection.setRequestProperty("Accept", "application/json, text/markdown, text/plain, image/*")
+    connection.connect()
+    if (connection.responseCode !in 200..299) {
+        val code = connection.responseCode
+        connection.disconnect()
+        error("Article request returned HTTP $code")
+    }
+    return connection
 }
 
 actual class TextCache actual constructor() {
@@ -33,11 +49,22 @@ actual class TextCache actual constructor() {
         }
 
     actual fun read(key: String): String? {
-        val file = File(dir, key)
+        val file = File(dir, safe(key))
         return if (file.exists()) file.readText() else null
     }
 
     actual fun write(key: String, text: String) {
-        File(dir, key).writeText(text)
+        File(dir, safe(key)).writeText(text)
     }
+
+    actual fun readBytes(key: String): ByteArray? {
+        val file = File(dir, safe(key))
+        return if (file.exists()) file.readBytes() else null
+    }
+
+    actual fun writeBytes(key: String, bytes: ByteArray) {
+        File(dir, safe(key)).writeBytes(bytes)
+    }
+
+    private fun safe(key: String) = key.replace('/', '_')
 }

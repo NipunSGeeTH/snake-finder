@@ -1,8 +1,12 @@
 package com.snakeid.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,34 +71,15 @@ fun IdentifyScreen(
     onOpenSpecies: (SnakeSpecies) -> Unit
 ) {
     val hero = remember { loadAssetBytes("brand/hero.jpg")?.toImageBitmap() }
-    val logo = remember { loadAssetBytes("brand/logo.jpg")?.toImageBitmap() }
     val photo = remember(imageBytes) { imageBytes?.toImageBitmap() }
     var showAllSamples by remember { mutableStateOf(false) }
     val samples = if (showAllSamples) samplePhotos else samplePhotos.take(3)
-    val subtitle = if (activeModelId == ModelCatalog.WIDE) "Wide catalog · 135 species" else "Quick model · 14 classes"
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
     ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (logo != null) {
-                    Image(
-                        bitmap = logo,
-                        contentDescription = "SnakeID",
-                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text("Snake ID", fontWeight = FontWeight.Bold, fontSize = 26.sp)
-                    Text(subtitle, color = Color(0xFF9CCC9C), fontSize = 13.sp)
-                }
-            }
-        }
         item {
             InfoCard(Color(0xFF17241C)) {
                 Row(
@@ -109,7 +94,13 @@ fun IdentifyScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    OutlinedButton(onClick = onOpenModel, shape = RoundedCornerShape(20.dp)) {
+                    val detailsPress = rememberPressSource()
+                    OutlinedButton(
+                        onClick = onOpenModel,
+                        interactionSource = detailsPress,
+                        modifier = Modifier.pressScale(detailsPress),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
                         Text("Details")
                     }
                 }
@@ -149,18 +140,22 @@ fun IdentifyScreen(
             }
         }
         item {
+            val cameraPress = rememberPressSource()
+            val galleryPress = rememberPressSource()
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = onLaunchCamera,
                     enabled = !busy,
-                    modifier = Modifier.weight(1.2f).height(54.dp),
+                    interactionSource = cameraPress,
+                    modifier = Modifier.pressScale(cameraPress).weight(1.2f).height(54.dp),
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                 ) { Text("Take photo", fontWeight = FontWeight.Bold) }
                 OutlinedButton(
                     onClick = onLaunchGallery,
                     enabled = !busy,
-                    modifier = Modifier.weight(1f).height(54.dp),
+                    interactionSource = galleryPress,
+                    modifier = Modifier.pressScale(galleryPress).weight(1f).height(54.dp),
                     shape = RoundedCornerShape(28.dp)
                 ) { Text("Gallery", fontWeight = FontWeight.Bold) }
             }
@@ -195,7 +190,14 @@ fun IdentifyScreen(
             item { Text(error, color = Color(0xFFFF8A80)) }
         }
         if (predictions.isNotEmpty()) {
-            item { ResultBanner(predictions.first()) }
+            item {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(appleFade()) + scaleIn(appleSpring(), initialScale = 0.98f)
+                ) {
+                    ResultBanner(predictions.first())
+                }
+            }
             item { Text("Model scores", fontWeight = FontWeight.Bold) }
             items(predictions) { prediction ->
                 PredictionCard(prediction, onOpenSpecies)
@@ -208,12 +210,14 @@ fun IdentifyScreen(
 private fun SampleCard(id: String, title: String, onClick: () -> Unit) {
     val image = remember(id) { loadBundledSample(id)?.toImageBitmap() }
     val species = SnakeSpeciesDatabase.speciesList.find { it.id == id }
+    val press = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
             .width(148.dp)
+            .pressScale(press)
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFF1B2420))
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = press, indication = null, onClick = onClick)
     ) {
         Box(
             modifier = Modifier.fillMaxWidth().height(110.dp).background(Color(0xFF101614)),

@@ -2,24 +2,27 @@
 
 package com.snakeid
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,6 +45,7 @@ import com.snakeid.domain.SnakeSpecies
 import com.snakeid.domain.parseWideLabels
 import com.snakeid.history.ScanHistory
 import com.snakeid.platform.ModelStore
+import com.snakeid.platform.PlatformBackHandler
 import com.snakeid.platform.SnakeClassifier
 import com.snakeid.platform.bundledText
 import com.snakeid.platform.loadBundledSample
@@ -52,18 +56,27 @@ import com.snakeid.ui.HistoryScreen
 import com.snakeid.ui.IdentifyScreen
 import com.snakeid.ui.ModelScreen
 import com.snakeid.ui.ScreenBackground
+import com.snakeid.ui.SettingsScreen
 import com.snakeid.ui.SpeciesDetailDialog
+import com.snakeid.ui.appleFade
+import com.snakeid.ui.appleSpring
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class AppTab(val title: String, val icon: String) {
-    IDENTIFY("Identify", "🐍"),
-    GUIDE("Guide", "📖"),
-    ARTICLES("Articles", "✎"),
-    MODEL("Model", "▣"),
-    HISTORY("History", "🕒")
+private enum class Place(val depth: Int) {
+    IDENTIFY(0),
+    ARTICLES(0),
+    SETTINGS(1),
+    GUIDE(2),
+    HISTORY(2),
+    MODEL(2)
+}
+
+private enum class RootTab(val title: String, val icon: String, val place: Place) {
+    IDENTIFY("Identify", "◎", Place.IDENTIFY),
+    ARTICLES("Articles", "✎", Place.ARTICLES)
 }
 
 @Composable
@@ -82,13 +95,27 @@ fun App() {
     var switchingModel by remember { mutableStateOf(false) }
     var modelError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    var tab by remember { mutableStateOf(AppTab.IDENTIFY) }
+    var stack by remember { mutableStateOf(listOf(Place.IDENTIFY)) }
     var imageBytes by remember { mutableStateOf<ByteArray?>(null) }
     var predictions by remember { mutableStateOf<List<Prediction>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var speciesDialog by remember { mutableStateOf<SnakeSpecies?>(null) }
     val requestIds = remember { intArrayOf(0) }
+    val place = stack.last()
+
+    fun open(next: Place) {
+        if (stack.last() == next) return
+        stack = stack + next
+    }
+
+    fun pop() {
+        if (stack.size > 1) stack = stack.dropLast(1)
+    }
+
+    fun showRoot(next: Place) {
+        stack = listOf(next)
+    }
 
     fun identify(bytes: ByteArray, note: String) {
         val requestId = ++requestIds[0]
@@ -139,24 +166,60 @@ fun App() {
     )
 
     MaterialTheme(colorScheme = colors) {
+        PlatformBackHandler(enabled = stack.size > 1, onBack = { pop() })
         Scaffold(
+            topBar = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (stack.size > 1) {
+                        TextButton(onClick = { pop() }) {
+                            Text("‹", fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                        }
+                    } else {
+                        Spacer(Modifier.padding(start = 12.dp))
+                    }
+                    Text(
+                        "Ophia",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 17.sp,
+                        letterSpacing = (-0.3).sp
+                    )
+                    Spacer(Modifier.weight(1f))
+                    if (place.depth == 0) {
+                        TextButton(onClick = { open(Place.SETTINGS) }) {
+                            Text("Settings", fontSize = 15.sp)
+                        }
+                    }
+                }
+            },
             bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    AppTab.entries.forEach { item ->
-                        NavigationBarItem(
-                            selected = tab == item,
-                            onClick = { tab = item },
-                            icon = { Text(item.icon, fontSize = 18.sp) },
-                            label = {
-                                Text(
-                                    item.title,
-                                    fontSize = 10.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontWeight = if (tab == item) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        )
+                AnimatedVisibility(
+                    visible = place.depth == 0,
+                    enter = fadeIn(appleFade()),
+                    exit = fadeOut(appleFade())
+                ) {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                        RootTab.entries.forEach { item ->
+                            NavigationBarItem(
+                                selected = place == item.place,
+                                onClick = { showRoot(item.place) },
+                                icon = { Text(item.icon, fontSize = 16.sp) },
+                                label = {
+                                    Text(
+                                        item.title,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        fontWeight = if (place == item.place) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -167,80 +230,101 @@ fun App() {
                     .padding(padding)
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                when (tab) {
-                    AppTab.IDENTIFY -> IdentifyScreen(
-                        imageBytes = imageBytes,
-                        predictions = predictions,
-                        busy = busy,
-                        error = error,
-                        activeModelId = activeModelId,
-                        onLaunchCamera = { picker.launchCamera() },
-                        onLaunchGallery = { picker.launchGallery() },
-                        onSelectSample = { sampleId ->
-                            val bytes = loadBundledSample(sampleId)
-                            if (bytes == null) {
-                                error = "That sample photo is missing from the app."
-                            } else {
-                                val title = com.snakeid.domain.samplePhotos.find { it.id == sampleId }?.title ?: sampleId
-                                identify(bytes, "Sample: $title")
-                            }
-                        },
-                        onOpenModel = { tab = AppTab.MODEL },
-                        onOpenSpecies = { speciesDialog = it }
-                    )
-                    AppTab.GUIDE -> FieldGuideScreen(onSelectSpecies = { speciesDialog = it })
-                    AppTab.ARTICLES -> ArticlesScreen()
-                    AppTab.MODEL -> ModelScreen(
-                        activeId = activeModelId,
-                        readyIds = readyIds,
-                        downloadId = downloadId,
-                        downloadPercent = downloadPercent,
-                        switching = switchingModel,
-                        error = modelError,
-                        wideLabels = wideLabels,
-                        onDownload = { modelId ->
-                            modelError = null
-                            downloadId = modelId
-                            downloadPercent = 0
-                            scope.launch {
-                                val result = runCatching {
-                                    modelStore.download(modelId) { percent -> downloadPercent = percent }
-                                }
-                                downloadId = null
-                                readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()
-                                result.onFailure { failure ->
-                                    modelError = failure.message ?: "The download failed."
-                                }
-                            }
-                        },
-                        onSelect = { modelId ->
-                            modelError = null
-                            switchingModel = true
-                            scope.launch {
-                                val message = withContext(Dispatchers.Default) { classifier.activate(modelId) }
-                                switchingModel = false
-                                if (message == null) {
-                                    activeModelId = modelStore.activeId()
-                                } else {
-                                    modelError = message
-                                    activeModelId = modelStore.activeId()
-                                }
-                            }
-                        },
-                        onDelete = { modelId ->
-                            modelStore.delete(modelId)
-                            readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()
-                            scope.launch {
-                                classifier.activate(ModelCatalog.QUICK)
-                                activeModelId = ModelCatalog.QUICK
-                            }
+                AnimatedContent(
+                    targetState = place,
+                    transitionSpec = {
+                        val forward = targetState.depth > initialState.depth ||
+                            (targetState.depth == initialState.depth && targetState.ordinal > initialState.ordinal)
+                        val enter = fadeIn(appleFade()) + slideInHorizontally(appleSpring()) { width ->
+                            if (forward) width / 5 else -width / 5
                         }
-                    )
-                    AppTab.HISTORY -> HistoryScreen(
-                        records = history.records,
-                        onClear = { history.clear() },
-                        onOpenSpecies = { speciesDialog = it }
-                    )
+                        val exit = fadeOut(appleFade()) + slideOutHorizontally(appleFade()) { width ->
+                            if (forward) -width / 8 else width / 8
+                        }
+                        enter togetherWith exit
+                    },
+                    label = "screen"
+                ) { current ->
+                    when (current) {
+                        Place.IDENTIFY -> IdentifyScreen(
+                            imageBytes = imageBytes,
+                            predictions = predictions,
+                            busy = busy,
+                            error = error,
+                            activeModelId = activeModelId,
+                            onLaunchCamera = { picker.launchCamera() },
+                            onLaunchGallery = { picker.launchGallery() },
+                            onSelectSample = { sampleId ->
+                                val bytes = loadBundledSample(sampleId)
+                                if (bytes == null) {
+                                    error = "That sample photo is missing from the app."
+                                } else {
+                                    val title = com.snakeid.domain.samplePhotos.find { it.id == sampleId }?.title ?: sampleId
+                                    identify(bytes, "Sample: $title")
+                                }
+                            },
+                            onOpenModel = { open(Place.MODEL) },
+                            onOpenSpecies = { speciesDialog = it }
+                        )
+                        Place.ARTICLES -> ArticlesScreen()
+                        Place.SETTINGS -> SettingsScreen(
+                            onGuide = { open(Place.GUIDE) },
+                            onHistory = { open(Place.HISTORY) },
+                            onModel = { open(Place.MODEL) }
+                        )
+                        Place.GUIDE -> FieldGuideScreen(onSelectSpecies = { speciesDialog = it })
+                        Place.HISTORY -> HistoryScreen(
+                            records = history.records,
+                            onClear = { history.clear() },
+                            onOpenSpecies = { speciesDialog = it }
+                        )
+                        Place.MODEL -> ModelScreen(
+                            activeId = activeModelId,
+                            readyIds = readyIds,
+                            downloadId = downloadId,
+                            downloadPercent = downloadPercent,
+                            switching = switchingModel,
+                            error = modelError,
+                            wideLabels = wideLabels,
+                            onDownload = { modelId ->
+                                modelError = null
+                                downloadId = modelId
+                                downloadPercent = 0
+                                scope.launch {
+                                    val result = runCatching {
+                                        modelStore.download(modelId) { percent -> downloadPercent = percent }
+                                    }
+                                    downloadId = null
+                                    readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()
+                                    result.onFailure { failure ->
+                                        modelError = failure.message ?: "The download failed."
+                                    }
+                                }
+                            },
+                            onSelect = { modelId ->
+                                modelError = null
+                                switchingModel = true
+                                scope.launch {
+                                    val message = withContext(Dispatchers.Default) { classifier.activate(modelId) }
+                                    switchingModel = false
+                                    if (message == null) {
+                                        activeModelId = modelStore.activeId()
+                                    } else {
+                                        modelError = message
+                                        activeModelId = modelStore.activeId()
+                                    }
+                                }
+                            },
+                            onDelete = { modelId ->
+                                modelStore.delete(modelId)
+                                readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()
+                                scope.launch {
+                                    classifier.activate(ModelCatalog.QUICK)
+                                    activeModelId = ModelCatalog.QUICK
+                                }
+                            }
+                        )
+                    }
                 }
                 speciesDialog?.let { species ->
                     SpeciesDetailDialog(
@@ -252,5 +336,3 @@ fun App() {
         }
     }
 }
-
-

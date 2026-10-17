@@ -48,7 +48,11 @@ expect fun dialPhone(number: String)
 
 expect suspend fun fetchText(url: String): String
 
+expect suspend fun fetchBytes(url: String): ByteArray
+
 expect class TextCache() {
     fun read(key: String): String?
     fun write(key: String, text: String)
+    fun readBytes(key: String): ByteArray?
+    fun writeBytes(key: String, bytes: ByteArray)
 }

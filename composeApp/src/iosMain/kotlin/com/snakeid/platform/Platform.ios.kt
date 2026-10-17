@@ -17,11 +17,18 @@ actual fun dialPhone(number: String) = Unit
 
 actual suspend fun fetchText(url: String): String = error("Articles load on Android in this build.")
 
+actual suspend fun fetchBytes(url: String): ByteArray = error("Articles load on Android in this build.")
+
 actual class TextCache actual constructor() {
     private val values = mutableMapOf<String, String>()
+    private val bytes = mutableMapOf<String, ByteArray>()
     actual fun read(key: String): String? = values[key]
     actual fun write(key: String, text: String) {
         values[key] = text
+    }
+    actual fun readBytes(key: String): ByteArray? = bytes[key]
+    actual fun writeBytes(key: String, data: ByteArray) {
+        bytes[key] = data
     }
 }
 

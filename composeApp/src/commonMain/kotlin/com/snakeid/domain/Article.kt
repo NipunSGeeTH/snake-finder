@@ -7,7 +7,8 @@ data class ArticleMeta(
     val slug: String,
     val title: String,
     val summary: String,
-    val updated: String
+    val updated: String,
+    val image: String = ""
 )
 
 @Serializable
