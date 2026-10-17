@@ -41,8 +41,28 @@ jobs:
       - name: Unit tests
         run: chmod +x gradlew && ./gradlew :composeApp:testDebugUnitTest --stacktrace
 
+      - name: Decode the release keystore
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          OPHIA_KEYSTORE_BASE64: ${{ secrets.OPHIA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$OPHIA_KEYSTORE_BASE64" ]; then
+            echo "No release keystore secret. Skipping signed release."
+            exit 0
+          fi
+          echo "$OPHIA_KEYSTORE_BASE64" | base64 -d > "$HOME/ophia-release.jks"
+          echo "OPHIA_STORE_FILE=$HOME/ophia-release.jks" >> "$GITHUB_ENV"
+
       - name: Build debug APK
         run: ./gradlew :androidApp:assembleDebug --stacktrace
+
+      - name: Build signed release APK
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.OPHIA_STORE_FILE != ''
+        env:
+          OPHIA_STORE_PASSWORD: ${{ secrets.OPHIA_STORE_PASSWORD }}
+          OPHIA_KEY_ALIAS: ${{ secrets.OPHIA_KEY_ALIAS }}
+          OPHIA_KEY_PASSWORD: ${{ secrets.OPHIA_KEY_PASSWORD }}
+        run: ./gradlew :androidApp:assembleRelease --stacktrace
 
       - name: Collect APK, tests, and sample photos
         if: always()
@@ -50,6 +70,9 @@ jobs:
           mkdir -p dist/tests
           if [ -f androidApp/build/outputs/apk/debug/androidApp-debug.apk ]; then
             cp androidApp/build/outputs/apk/debug/androidApp-debug.apk dist/snakeid-debug.apk
+          fi
+          if [ -f androidApp/build/outputs/apk/release/androidApp-release.apk ]; then
+            cp androidApp/build/outputs/apk/release/androidApp-release.apk dist/ophia-release.apk
           fi
           cp -r composeApp/build/test-results/testDebugUnitTest/. dist/tests/ || true
           cp -r composeApp/build/reports/tests/testDebugUnitTest dist/tests/html || true
@@ -62,6 +85,14 @@ jobs:
           name: snakeid-debug-apk
           path: dist/snakeid-debug.apk
           if-no-files-found: error
+
+      - name: Upload signed release APK
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ophia-release-apk
+          path: dist/ophia-release.apk
+          if-no-files-found: warn
 
       - name: Upload test results and sample photos
         if: always()
@@ -81,22 +112,17 @@ jobs:
         run: |
           SHA="${GITHUB_SHA::7}"
           DATE="$(date -u +%Y-%m-%d)"
-          TITLE="Ophia debug APK · ${DATE} · ${SHA}"
-          NOTES="Debug APK for Ophia, built from main at ${SHA} on ${DATE}. Install with: adb install -r snakeid-debug.apk. Also attached: unit-test report, model check log, and sample photos."
+          TITLE="Ophia APK · ${DATE} · ${SHA}"
+          NOTES="Ophia APKs built from main at ${SHA} on ${DATE}. Prefer ophia-release.apk for installs. Debug APK is also attached. Install with: adb install -r ophia-release.apk"
+          FILES=(dist/snakeid-debug.apk dist/unit-tests.zip dist/model-check.txt dist/sample-photos.zip)
+          if [ -f dist/ophia-release.apk ]; then
+            FILES+=(dist/ophia-release.apk)
+          fi
           if gh release view latest-apk >/dev/null 2>&1; then
-            gh release upload latest-apk \
-              dist/snakeid-debug.apk \
-              dist/unit-tests.zip \
-              dist/model-check.txt \
-              dist/sample-photos.zip \
-              --clobber
+            gh release upload latest-apk "${FILES[@]}" --clobber
             gh release edit latest-apk --title "$TITLE" --notes "$NOTES" --latest
           else
-            gh release create latest-apk \
-              dist/snakeid-debug.apk \
-              dist/unit-tests.zip \
-              dist/model-check.txt \
-              dist/sample-photos.zip \
+            gh release create latest-apk "${FILES[@]}" \
               --title "$TITLE" \
               --notes "$NOTES" \
               --latest \

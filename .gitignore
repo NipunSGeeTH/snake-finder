@@ -23,6 +23,9 @@ Thumbs.db
 *.jks
 *.keystore
 *.keystore.properties
+keystore.properties
+signing.properties
+*.base64
 
 # Python
 __pycache__/
