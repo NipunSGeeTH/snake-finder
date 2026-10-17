@@ -9,16 +9,19 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +36,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +59,11 @@ import com.snakeid.ui.FieldGuideScreen
 import com.snakeid.ui.HistoryScreen
 import com.snakeid.ui.IdentifyScreen
 import com.snakeid.ui.ModelScreen
+import com.snakeid.ui.AppBackground
+import com.snakeid.ui.MutedGreen
 import com.snakeid.ui.ScreenBackground
+import com.snakeid.ui.TabGlyph
+import com.snakeid.ui.liquidGlass
 import com.snakeid.ui.SettingsScreen
 import com.snakeid.ui.SpeciesDetailDialog
 import com.snakeid.ui.appleFade
@@ -67,16 +76,17 @@ import kotlinx.coroutines.withContext
 private enum class Place(val depth: Int) {
     IDENTIFY(0),
     ARTICLES(0),
+    GUIDE(0),
     SETTINGS(0),
-    GUIDE(1),
     HISTORY(1),
     MODEL(1)
 }
 
-private enum class RootTab(val title: String, val icon: String, val place: Place) {
-    IDENTIFY("Identify", "◎", Place.IDENTIFY),
-    ARTICLES("Articles", "✎", Place.ARTICLES),
-    SETTINGS("Settings", "⚙", Place.SETTINGS)
+private enum class RootTab(val title: String, val place: Place) {
+    IDENTIFY("Identify", Place.IDENTIFY),
+    ARTICLES("Articles", Place.ARTICLES),
+    GUIDE("Species", Place.GUIDE),
+    SETTINGS("Settings", Place.SETTINGS)
 }
 
 @Composable
@@ -155,12 +165,17 @@ fun App() {
 
     val colors = darkColorScheme(
         primary = Color(0xFF4CAF50),
-        onPrimary = Color(0xFF00390E),
+        onPrimary = Color.White,
         primaryContainer = Color(0xFF1B5E20),
+        onPrimaryContainer = Color.White,
         secondary = Color(0xFF81C784),
+        onSecondary = Color(0xFF04210F),
         background = ScreenBackground,
+        onBackground = Color(0xFFE8F0EB),
         surface = Color(0xFF1B1E1C),
+        onSurface = Color(0xFFE8F0EB),
         surfaceVariant = Color(0xFF262C28),
+        onSurfaceVariant = Color(0xFFB7C4BC),
         error = Color(0xFFEF5350),
         onError = Color.White
     )
@@ -168,47 +183,55 @@ fun App() {
     MaterialTheme(colorScheme = colors) {
         PlatformBackHandler(enabled = stack.size > 1, onBack = { pop() })
         Scaffold(
-            topBar = {
+            containerColor = Color(0xFF1C4030),
+            contentColor = Color(0xFFE8F0EB),
+            bottomBar = {
+                val selected = stack.firstOrNull { it.depth == 0 } ?: Place.IDENTIFY
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp)
-                        .padding(horizontal = 4.dp),
+                        .navigationBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .liquidGlass(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                        .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (stack.size > 1) {
-                        TextButton(onClick = { pop() }) {
-                            Text("‹", fontSize = 22.sp, fontWeight = FontWeight.Medium)
-                        }
-                    } else {
-                        Spacer(Modifier.padding(start = 12.dp))
-                    }
-                    Text(
-                        "Ophia",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 17.sp,
-                        letterSpacing = (-0.3).sp
-                    )
-                }
-            },
-            bottomBar = {
-                val selected = stack.firstOrNull { it.depth == 0 } ?: Place.IDENTIFY
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     RootTab.entries.forEach { item ->
-                        NavigationBarItem(
-                            selected = selected == item.place,
-                            onClick = { showRoot(item.place) },
-                            icon = { Text(item.icon, fontSize = 16.sp) },
-                            label = {
-                                Text(
-                                    item.title,
-                                    fontSize = 12.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontWeight = if (selected == item.place) FontWeight.SemiBold else FontWeight.Normal
+                        val on = selected == item.place
+                        val tint = if (on) MutedGreen else Color(0xFFE4F2EA)
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showRoot(item.place) }
+                                .padding(vertical = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(if (on) MutedGreen.copy(alpha = 0.18f) else Color.Transparent),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                TabGlyph(
+                                    when (item.place) {
+                                        Place.IDENTIFY -> "identify"
+                                        Place.ARTICLES -> "articles"
+                                        Place.GUIDE -> "species"
+                                        else -> "settings"
+                                    },
+                                    tint
                                 )
                             }
-                        )
+                            Text(
+                                item.title,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = tint,
+                                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                        }
                     }
                 }
             }
@@ -217,7 +240,7 @@ fun App() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(AppBackground)
             ) {
                 AnimatedContent(
                     targetState = place,
@@ -257,13 +280,14 @@ fun App() {
                         )
                         Place.ARTICLES -> ArticlesScreen()
                         Place.SETTINGS -> SettingsScreen(
-                            onGuide = { open(Place.GUIDE) },
+                            onGuide = { showRoot(Place.GUIDE) },
                             onHistory = { open(Place.HISTORY) },
                             onModel = { open(Place.MODEL) }
                         )
                         Place.GUIDE -> FieldGuideScreen(onSelectSpecies = { speciesDialog = it })
                         Place.HISTORY -> HistoryScreen(
                             records = history.records,
+                            onBack = { pop() },
                             onClear = { history.clear() },
                             onOpenSpecies = { speciesDialog = it }
                         )
@@ -304,6 +328,7 @@ fun App() {
                                     }
                                 }
                             },
+                            onBack = { pop() },
                             onDelete = { modelId ->
                                 modelStore.delete(modelId)
                                 readyIds = ModelCatalog.offers.map { it.id }.filter { modelStore.isReady(it) }.toSet()

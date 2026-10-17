@@ -35,6 +35,7 @@ import com.snakeid.platform.formatWhen
 @Composable
 fun HistoryScreen(
     records: List<ScanRecord>,
+    onBack: () -> Unit,
     onClear: () -> Unit,
     onOpenSpecies: (SnakeSpecies) -> Unit
 ) {
@@ -42,19 +43,17 @@ fun HistoryScreen(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        item { OphiaHeader(onBack = onBack) }
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Saved on this phone (${records.size})", fontWeight = FontWeight.Bold)
-                if (records.isNotEmpty()) {
-                    TextButton(onClick = onClear) {
-                        Text("Clear", color = Color(0xFFEF5350))
+            PageTitle(
+                title = "History",
+                subtitle = "Saved on this phone (${records.size})",
+                trailing = {
+                    if (records.isNotEmpty()) {
+                        TextButton(onClick = onClear) { Text("Clear", color = Color(0xFFEF5350)) }
                     }
                 }
-            }
+            )
         }
         if (records.isEmpty()) {
             item {
@@ -65,26 +64,26 @@ fun HistoryScreen(
         }
         items(records, key = { it.id }) { record ->
             val species = record.speciesId?.let { id -> SnakeSpeciesDatabase.speciesList.find { it.id == id } }
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable(enabled = species != null) {
-                    if (species != null) onOpenSpecies(species)
-                },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .liquidGlass()
+                    .clickable(enabled = species != null) {
+                        if (species != null) onOpenSpecies(species)
+                    }
+                    .padding(14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(record.commonName, fontWeight = FontWeight.Bold)
+                        Text(record.commonName, fontWeight = FontWeight.Bold, color = Color.White)
                         if (record.scientificName.isNotEmpty()) {
                             Text(record.scientificName, fontStyle = FontStyle.Italic, color = Color.LightGray, fontSize = 12.sp)
                         }
                         Text("${formatWhen(record.epochMs)} · ${record.note}", color = Color.Gray, fontSize = 11.sp)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("${(record.confidence * 100).toInt()}%", fontWeight = FontWeight.Bold)
+                        Text("${(record.confidence * 100).toInt()}%", fontWeight = FontWeight.Bold, color = Color.White)
                         Spacer(Modifier.height(4.dp))
                         val status = runCatching { VenomStatus.valueOf(record.venomStatusName) }.getOrNull()
                         val kind = runCatching { ResultKind.valueOf(record.kindName) }.getOrNull()
@@ -94,7 +93,6 @@ fun HistoryScreen(
                             Text(kind?.name?.replace('_', ' ') ?: record.kindName, fontSize = 11.sp, color = Color.LightGray)
                         }
                     }
-                }
             }
         }
     }

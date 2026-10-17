@@ -41,7 +41,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.snakeid.domain.ArticleBlock
@@ -60,16 +67,21 @@ fun ArticlesScreen() {
     var selected by remember { mutableStateOf<ArticleMeta?>(null) }
     var body by remember { mutableStateOf<List<ArticleBlock>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var needsInternet by remember { mutableStateOf(false) }
 
     fun refresh() {
         loading = true
-        error = null
+        needsInternet = false
         scope.launch {
             val result = runCatching { client.index() }
             loading = false
-            result.onSuccess { articles = it }
-            result.onFailure { error = it.message ?: "Could not load articles." }
+            result.onSuccess {
+                articles = it
+                needsInternet = false
+            }
+            result.onFailure {
+                if (articles.isEmpty()) needsInternet = true
+            }
         }
     }
 
@@ -78,20 +90,20 @@ fun ArticlesScreen() {
     fun closeArticle() {
         selected = null
         body = emptyList()
-        error = null
+        needsInternet = false
     }
 
     fun openArticle(article: ArticleMeta) {
         selected = article
         loading = true
-        error = null
+        needsInternet = false
         body = emptyList()
         scope.launch {
             val result = runCatching { parseArticle(client.body(article.slug)) }
             if (selected?.slug != article.slug) return@launch
             loading = false
             result.onSuccess { body = it }
-            result.onFailure { error = it.message ?: "Could not open this article." }
+            result.onFailure { needsInternet = true }
         }
     }
 
@@ -120,8 +132,9 @@ fun ArticlesScreen() {
                 client = client,
                 blocks = if (selected?.slug == current.slug) body else emptyList(),
                 loading = selected?.slug == current.slug && loading,
-                error = if (selected?.slug == current.slug) error else null,
-                onBack = { closeArticle() }
+                needsInternet = selected?.slug == current.slug && needsInternet,
+                onBack = { closeArticle() },
+                onRetry = { openArticle(current) }
             )
             return@AnimatedContent
         }
@@ -131,34 +144,25 @@ fun ArticlesScreen() {
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        item { OphiaHeader() }
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Articles", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Published separately from the app. Refresh to see edits.",
-                        color = Color.Gray,
-                        fontSize = 12.sp
-                    )
-                }
-                TextButton(onClick = { refresh() }, enabled = !loading) { Text("Refresh") }
-            }
+            PageTitle(
+                title = "Articles",
+                subtitle = "Published separately from the app. Refresh to see edits.",
+                trailing = { TextButton(onClick = { refresh() }, enabled = !loading) { Text("Refresh", color = MutedGreen) } }
+            )
         }
         if (loading && articles.isEmpty()) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(modifier = Modifier.height(22.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.height(22.dp), strokeWidth = 2.dp, color = MutedGreen)
                     Spacer(Modifier.padding(6.dp))
-                    Text("Loading articles…")
+                    Text("Loading articles…", color = Color(0xFFB7C4BC))
                 }
             }
         }
-        if (error != null && articles.isEmpty()) {
-            item { Text(error!!, color = Color(0xFFFF8A80)) }
+        if (needsInternet && articles.isEmpty()) {
+            item { ConnectCard(onRetry = { refresh() }) }
         }
         items(articles, key = { it.slug }) { article ->
             val press = remember(article.slug) { MutableInteractionSource() }
@@ -174,7 +178,7 @@ fun ArticlesScreen() {
                 ) {
                     ArticleThumb(client, article.image, Modifier.fillMaxWidth().height(140.dp))
                     Spacer(Modifier.height(8.dp))
-                    Text(article.title, fontWeight = FontWeight.Bold)
+                    Text(article.title, fontWeight = FontWeight.Bold, color = Color.White)
                     Spacer(Modifier.height(4.dp))
                     Text(article.summary, color = Color.LightGray, fontSize = 13.sp)
                     Spacer(Modifier.height(6.dp))
@@ -194,36 +198,138 @@ private fun ArticleReader(
     client: ArticleClient,
     blocks: List<ArticleBlock>,
     loading: Boolean,
-    error: String?,
-    onBack: () -> Unit
+    needsInternet: Boolean,
+    onBack: () -> Unit,
+    onRetry: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            TextButton(onClick = onBack) { Text("Back") }
-            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-            Text(updated, color = Color.Gray, fontSize = 12.sp)
+            OphiaHeader(onBack = onBack)
+            Spacer(Modifier.height(8.dp))
+            PageTitle(title = title, subtitle = updated)
             Spacer(Modifier.height(8.dp))
             ArticleThumb(client, image, Modifier.fillMaxWidth().height(180.dp))
         }
         if (loading) {
-            item { Text("Loading…", color = Color.Gray) }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.height(22.dp), strokeWidth = 2.dp, color = MutedGreen)
+                    Spacer(Modifier.padding(6.dp))
+                    Text("Loading this note…", color = Color(0xFFB7C4BC))
+                }
+            }
         }
-        if (error != null) {
-            item { Text(error, color = Color(0xFFFF8A80)) }
+        if (needsInternet) {
+            item { ConnectCard(onRetry = onRetry) }
         }
         val bodyBlocks = if (
-            blocks.firstOrNull()?.kind == ArticleBlock.Kind.HEADING &&
+            blocks.firstOrNull()?.kind == ArticleBlock.Kind.TITLE &&
             blocks.first().text.equals(title, ignoreCase = true)
         ) blocks.drop(1) else blocks
         items(bodyBlocks) { block ->
             when (block.kind) {
-                ArticleBlock.Kind.HEADING -> Text(block.text, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                ArticleBlock.Kind.PARAGRAPH -> Text(block.text, color = Color(0xFFE0E0E0), fontSize = 15.sp)
-                ArticleBlock.Kind.BULLET -> Text("• ${block.text}", color = Color(0xFFE0E0E0), fontSize = 15.sp)
+                ArticleBlock.Kind.TITLE -> MarkdownLine(block.text, Color.White, 26.sp, FontWeight.Bold)
+                ArticleBlock.Kind.SUBTITLE -> MarkdownLine(block.text, MutedGreen, 20.sp, FontWeight.SemiBold)
+                ArticleBlock.Kind.HEADING -> MarkdownLine(block.text, Color.White, 16.sp, FontWeight.SemiBold)
+                ArticleBlock.Kind.PARAGRAPH -> MarkdownLine(block.text, Color(0xFFE4EDE8), 15.sp, FontWeight.Normal)
+                ArticleBlock.Kind.BULLET -> MarkdownLine("•  ${block.text}", Color(0xFFE4EDE8), 15.sp, FontWeight.Normal)
+                ArticleBlock.Kind.NUMBER -> MarkdownLine(block.text, Color(0xFFE4EDE8), 15.sp, FontWeight.Normal)
+                ArticleBlock.Kind.QUOTE -> MarkdownLine(block.text, Color(0xFFB7C4BC), 15.sp, FontWeight.Normal, italic = true)
             }
+        }
+    }
+}
+
+@Composable
+private fun ConnectCard(onRetry: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().liquidGlass().padding(16.dp)) {
+        Text("Connect to the internet", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "These notes are published online. Connect, then try again.",
+            color = Color(0xFFB7C4BC),
+            fontSize = 14.sp
+        )
+        TextButton(onClick = onRetry) { Text("Try again", color = MutedGreen) }
+    }
+}
+
+@Composable
+private fun MarkdownLine(
+    text: String,
+    color: Color,
+    fontSize: TextUnit,
+    weight: FontWeight,
+    italic: Boolean = false
+) {
+    Text(markdownInline(text, weight, italic), color = color, fontSize = fontSize)
+}
+
+private fun markdownInline(source: String, weight: FontWeight, italic: Boolean): AnnotatedString {
+    return buildAnnotatedString {
+        var index = 0
+        while (index < source.length) {
+            when {
+                source.startsWith("**", index) -> {
+                    val end = source.indexOf("**", index + 2)
+                    if (end < 0) {
+                        append(source.substring(index))
+                        return@buildAnnotatedString
+                    }
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(source.substring(index + 2, end))
+                    }
+                    index = end + 2
+                }
+                source.startsWith("`", index) -> {
+                    val end = source.indexOf('`', index + 1)
+                    if (end < 0) {
+                        append(source.substring(index))
+                        return@buildAnnotatedString
+                    }
+                    withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
+                        append(source.substring(index + 1, end))
+                    }
+                    index = end + 1
+                }
+                source.startsWith("[", index) -> {
+                    val labelEnd = source.indexOf("](", index + 1)
+                    val urlEnd = if (labelEnd > 0) source.indexOf(')', labelEnd + 2) else -1
+                    if (labelEnd < 0 || urlEnd < 0) {
+                        append(source[index])
+                        index += 1
+                    } else {
+                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                            append(source.substring(index + 1, labelEnd))
+                        }
+                        index = urlEnd + 1
+                    }
+                }
+                source.startsWith("*", index) || source.startsWith("_", index) -> {
+                    val mark = source[index]
+                    val end = source.indexOf(mark, index + 1)
+                    if (end < 0) {
+                        append(source.substring(index))
+                        return@buildAnnotatedString
+                    }
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        append(source.substring(index + 1, end))
+                    }
+                    index = end + 1
+                }
+                else -> {
+                    append(source[index])
+                    index += 1
+                }
+            }
+        }
+        if (italic) {
+            addStyle(SpanStyle(fontStyle = FontStyle.Italic, fontWeight = weight), 0, length)
+        } else if (weight != FontWeight.Normal) {
+            addStyle(SpanStyle(fontWeight = weight), 0, length)
         }
     }
 }

@@ -3,6 +3,7 @@ package com.snakeid.platform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -31,11 +32,15 @@ private fun open(url: String): HttpURLConnection {
     connection.readTimeout = 20_000
     connection.setRequestProperty("User-Agent", "Ophia")
     connection.setRequestProperty("Accept", "application/json, text/markdown, text/plain, image/*")
-    connection.connect()
-    if (connection.responseCode !in 200..299) {
-        val code = connection.responseCode
+    try {
+        connection.connect()
+        if (connection.responseCode !in 200..299) {
+            connection.disconnect()
+            throw IOException("The article server did not answer")
+        }
+    } catch (failure: IOException) {
         connection.disconnect()
-        error("Article request returned HTTP $code")
+        throw failure
     }
     return connection
 }

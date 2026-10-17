@@ -17,8 +17,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,14 +52,26 @@ fun FieldGuideScreen(onSelectSpecies: (SnakeSpecies) -> Unit) {
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        item { OphiaHeader() }
         item {
+            PageTitle("Species", "Field notes kept on the phone")
+            Spacer(Modifier.height(10.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Name, local name, or habitat") },
-                shape = RoundedCornerShape(12.dp)
+                placeholder = { Text("Name, local name, or habitat") },
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MutedGreen,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.22f),
+                    focusedContainerColor = Color.White.copy(alpha = 0.06f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.06f),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = MutedGreen
+                )
             )
         }
         item {
@@ -66,7 +80,13 @@ fun FieldGuideScreen(onSelectSpecies: (SnakeSpecies) -> Unit) {
                     FilterChip(
                         selected = filter == null,
                         onClick = { filter = null },
-                        label = { Text("All (${SnakeSpeciesDatabase.speciesList.size})") }
+                        label = { Text("All (${SnakeSpeciesDatabase.speciesList.size})") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = Color.White.copy(alpha = 0.08f),
+                            labelColor = Color.White,
+                            selectedContainerColor = Color(0xFF1B5E20),
+                            selectedLabelColor = Color.White
+                        )
                     )
                 }
                 item { StatusFilter(VenomStatus.DEADLY, "Deadly", filter) { filter = it } }
@@ -79,18 +99,16 @@ fun FieldGuideScreen(onSelectSpecies: (SnakeSpecies) -> Unit) {
             item { Text("No species match that search.", color = Color.Gray) }
         }
         items(species) { item ->
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable { onSelectSpecies(item) },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            Column(
+                modifier = Modifier.fillMaxWidth().liquidGlass().clickable { onSelectSpecies(item) }.padding(14.dp)
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(item.commonName, fontWeight = FontWeight.Bold)
+                            Text(item.commonName, fontWeight = FontWeight.Bold, color = Color.White)
                             Text(item.scientificName, fontStyle = FontStyle.Italic, color = Color.LightGray, fontSize = 13.sp)
                         }
                         StatusBadge(item.venomStatus)
@@ -104,10 +122,9 @@ fun FieldGuideScreen(onSelectSpecies: (SnakeSpecies) -> Unit) {
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         DangerLine(item.dangerLevel)
-                        Text("Open", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Open", color = MutedGreen, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
-            }
         }
     }
 }
@@ -122,6 +139,12 @@ private fun StatusFilter(
     FilterChip(
         selected = selected == status,
         onClick = { onSelect(if (selected == status) null else status) },
-        label = { Text(label) }
+        label = { Text(label) },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.White.copy(alpha = 0.08f),
+            labelColor = Color.White,
+            selectedContainerColor = Color(0xFF1B5E20),
+            selectedLabelColor = Color.White
+        )
     )
 }

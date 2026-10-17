@@ -30,11 +30,9 @@ fun SettingsScreen(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item {
-            Text("Settings", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            Text("Guide, history, and the model live here.", color = Color.Gray, fontSize = 13.sp)
-        }
-        item { SettingsRow("Field guide", "Species notes kept on the phone", onGuide) }
+        item { OphiaHeader() }
+        item { PageTitle("Settings", "Species, history, and the model.") }
+        item { SettingsRow("Species", "Field notes kept on the phone", onGuide) }
         item { SettingsRow("History", "Names saved from this phone", onHistory) }
         item { SettingsRow("Model", "Switch or download a catalog", onModel) }
     }
@@ -53,7 +51,7 @@ private fun SettingsRow(title: String, detail: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.SemiBold)
+                Text(title, fontWeight = FontWeight.SemiBold, color = Color.White)
                 Text(detail, color = Color.Gray, fontSize = 12.sp)
             }
             Text("›", color = Color(0xFF9CCC9C), fontSize = 22.sp)

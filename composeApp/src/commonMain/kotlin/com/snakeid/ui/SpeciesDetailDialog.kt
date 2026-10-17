@@ -38,7 +38,7 @@ fun SpeciesDetailDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(species.commonName, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                    Text(species.commonName, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White, modifier = Modifier.weight(1f))
                     StatusBadge(species.venomStatus)
                 }
                 Text(species.scientificName, fontStyle = FontStyle.Italic, color = Color.LightGray, fontSize = 13.sp)
@@ -53,11 +53,11 @@ fun SpeciesDetailDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 DangerLine(species.dangerLevel)
-                Text("Field marks", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Field marks", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                 species.identifyingFeatures.forEach { feature ->
                     Text("• $feature", fontSize = 12.sp, color = Color.LightGray)
                 }
-                Text("Habitat and behavior", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Habitat and behavior", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                 Text(species.habitat, fontSize = 12.sp, color = Color.LightGray)
                 Text(species.behavior, fontSize = 12.sp, color = Color.LightGray)
                 if (species.lookAlikes.isNotEmpty()) {
@@ -68,7 +68,7 @@ fun SpeciesDetailDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text("Close", color = MutedGreen) }
         }
     )
 }

@@ -41,13 +41,17 @@ fun ModelScreen(
     wideLabels: List<WideLabel>,
     onDownload: (String) -> Unit,
     onSelect: (String) -> Unit,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    onBack: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        item { OphiaHeader(onBack = onBack) }
         item {
+            PageTitle("Model", "Choose what runs on this phone.")
+            Spacer(Modifier.height(6.dp))
             Text(
                 "Every photo is checked first by a snake-or-not model. A phone, a flower, or another object does not get a species name. Only a photo that passes that check is sent to the quick model or the wide catalog.",
                 color = Color.LightGray,
@@ -87,7 +91,7 @@ fun ModelScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(known?.commonName ?: label.common, fontWeight = FontWeight.Bold)
+                            Text(known?.commonName ?: label.common, fontWeight = FontWeight.Bold, color = Color.White)
                             Text(label.scientific, fontStyle = FontStyle.Italic, color = Color.LightGray, fontSize = 12.sp)
                         }
                         if (known != null) {
@@ -110,7 +114,7 @@ fun ModelScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(species?.commonName ?: label, fontWeight = FontWeight.Bold)
+                            Text(species?.commonName ?: label, fontWeight = FontWeight.Bold, color = Color.White)
                             if (species != null) {
                                 Text(species.scientificName, fontStyle = FontStyle.Italic, color = Color.LightGray, fontSize = 12.sp)
                             }
@@ -136,14 +140,14 @@ private fun ModelCard(
     onDelete: () -> Unit
 ) {
     InfoCard(if (active) Color(0xFF1B3324) else MaterialTheme.colorScheme.surfaceVariant) {
-        Text(offer.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+        Text(offer.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = Color.White)
         if (active) {
             Text("In use", color = MutedGreen, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(6.dp))
         Text(offer.summary, color = Color.LightGray, fontSize = 13.sp)
         Spacer(Modifier.height(6.dp))
-        Text("${offer.speciesCount} classes · about ${offer.sizeMb} MB", fontSize = 12.sp)
+        Text("${offer.speciesCount} classes · about ${offer.sizeMb} MB", fontSize = 12.sp, color = Color(0xFFE8F0EB))
         Text(offer.credit, color = Color.Gray, fontSize = 11.sp)
         Spacer(Modifier.height(10.dp))
         when {
@@ -153,24 +157,24 @@ private fun ModelCard(
                     modifier = Modifier.fillMaxWidth().height(8.dp)
                 )
                 Spacer(Modifier.height(4.dp))
-                Text("Downloading $percent%", fontSize = 12.sp)
+                Text("Downloading $percent%", fontSize = 12.sp, color = Color.White)
             }
-            switching && active -> Text("Opening the model…", fontSize = 12.sp)
+            switching && active -> Text("Opening the model…", fontSize = 12.sp, color = Color.White)
             !ready -> {
                 Button(onClick = onDownload, shape = RoundedCornerShape(10.dp)) {
-                    Text("Download ${offer.sizeMb} MB")
+                    Text("Download ${offer.sizeMb} MB", color = Color.White)
                 }
             }
             else -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (!active) {
                         Button(onClick = onSelect, enabled = !switching, shape = RoundedCornerShape(10.dp)) {
-                            Text("Use this model")
+                            Text("Use this model", color = Color.White)
                         }
                     }
                     if (!offer.builtIn) {
                         OutlinedButton(onClick = onDelete, enabled = !switching, shape = RoundedCornerShape(10.dp)) {
-                            Text("Delete")
+                            Text("Delete", color = Color(0xFFFF8A80))
                         }
                     }
                 }

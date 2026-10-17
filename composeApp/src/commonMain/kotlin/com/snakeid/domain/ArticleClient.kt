@@ -13,22 +13,25 @@ class ArticleClient(private val cache: TextCache = TextCache()) {
         for (root in roots) {
             try {
                 val text = fetchText("$root/articles/index.json")
-                if (text.isBlank()) continue
+                if (!text.trimStart().startsWith("{")) continue
                 val articles = json.decodeFromString(ArticleIndex.serializer(), text).articles
                 if (articles.isEmpty() || articles.any { it.image.isNotBlank() }) {
                     cache.write("article-index.json", text)
                     return articles
                 }
                 withoutImages = articles
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 lastError = error
             }
         }
         withoutImages?.let { return it }
         cache.read("article-index.json")?.let { cached ->
-            return json.decodeFromString(ArticleIndex.serializer(), cached).articles
+            val saved = runCatching { json.decodeFromString(ArticleIndex.serializer(), cached).articles }.getOrNull()
+            if (saved != null) return saved
         }
-        throw lastError ?: IllegalStateException("The article list could not be loaded.")
+        throw ArticleOffline().also { if (lastError != null) it.initCause(lastError) }
     }
 
     fun imageUrl(image: String): String? {
@@ -64,16 +67,18 @@ class ArticleClient(private val cache: TextCache = TextCache()) {
         for (root in roots) {
             try {
                 val text = fetchText("$root/$path")
-                if (text.isNotBlank()) {
+                if (text.isNotBlank() && !text.trimStart().startsWith("<")) {
                     cache.write(cacheKey, text)
                     return text
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 lastError = error
             }
         }
         cache.read(cacheKey)?.let { return it }
-        throw lastError ?: IllegalStateException("The article list could not be loaded.")
+        throw ArticleOffline().also { if (lastError != null) it.initCause(lastError) }
     }
 
     private companion object {

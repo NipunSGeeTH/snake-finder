@@ -17,8 +17,10 @@ data class ArticleIndex(
 )
 
 data class ArticleBlock(val kind: Kind, val text: String) {
-    enum class Kind { HEADING, PARAGRAPH, BULLET }
+    enum class Kind { TITLE, SUBTITLE, HEADING, PARAGRAPH, BULLET, NUMBER, QUOTE }
 }
+
+class ArticleOffline : Exception("Connect to the internet, then try again.")
 
 fun parseArticle(markdown: String): List<ArticleBlock> {
     val blocks = mutableListOf<ArticleBlock>()
@@ -30,23 +32,33 @@ fun parseArticle(markdown: String): List<ArticleBlock> {
     }
     markdown.lineSequence().forEach { raw ->
         val line = raw.trim()
+        val number = NUMBERED.matchEntire(line)
         when {
             line.isEmpty() -> flushParagraph()
+            line == "---" || line == "***" -> flushParagraph()
             line.startsWith("### ") -> {
                 flushParagraph()
                 blocks += ArticleBlock(ArticleBlock.Kind.HEADING, line.removePrefix("### "))
             }
             line.startsWith("## ") -> {
                 flushParagraph()
-                blocks += ArticleBlock(ArticleBlock.Kind.HEADING, line.removePrefix("## "))
+                blocks += ArticleBlock(ArticleBlock.Kind.SUBTITLE, line.removePrefix("## "))
             }
             line.startsWith("# ") -> {
                 flushParagraph()
-                blocks += ArticleBlock(ArticleBlock.Kind.HEADING, line.removePrefix("# "))
+                blocks += ArticleBlock(ArticleBlock.Kind.TITLE, line.removePrefix("# "))
             }
-            line.startsWith("- ") -> {
+            line.startsWith("> ") -> {
                 flushParagraph()
-                blocks += ArticleBlock(ArticleBlock.Kind.BULLET, line.removePrefix("- "))
+                blocks += ArticleBlock(ArticleBlock.Kind.QUOTE, line.removePrefix("> "))
+            }
+            line.startsWith("- ") || (line.startsWith("* ") && !line.startsWith("**")) -> {
+                flushParagraph()
+                blocks += ArticleBlock(ArticleBlock.Kind.BULLET, line.drop(2))
+            }
+            number != null -> {
+                flushParagraph()
+                blocks += ArticleBlock(ArticleBlock.Kind.NUMBER, "${number.groupValues[1]}. ${number.groupValues[2]}")
             }
             else -> {
                 if (paragraph.isNotEmpty()) paragraph.append(' ')
@@ -57,3 +69,5 @@ fun parseArticle(markdown: String): List<ArticleBlock> {
     flushParagraph()
     return blocks
 }
+
+private val NUMBERED = Regex("""^(\d+)\.\s+(.+)$""")
