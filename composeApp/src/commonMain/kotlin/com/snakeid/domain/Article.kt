@@ -8,6 +8,7 @@ data class ArticleMeta(
     val title: String,
     val summary: String,
     val updated: String,
+    val author: String = "",
     val image: String = ""
 )
 

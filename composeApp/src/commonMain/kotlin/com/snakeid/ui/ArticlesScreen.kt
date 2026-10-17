@@ -128,6 +128,7 @@ fun ArticlesScreen() {
             ArticleReader(
                 title = current.title,
                 updated = current.updated,
+                author = current.author,
                 image = current.image,
                 client = client,
                 blocks = if (selected?.slug == current.slug) body else emptyList(),
@@ -182,7 +183,7 @@ fun ArticlesScreen() {
                     Spacer(Modifier.height(4.dp))
                     Text(article.summary, color = Color.LightGray, fontSize = 13.sp)
                     Spacer(Modifier.height(6.dp))
-                    Text(article.updated, color = Color.Gray, fontSize = 11.sp)
+                    Text(articleCredit(article.author, article.updated), color = Color(0xFFB7C4BC), fontSize = 12.sp)
                 }
             }
         }
@@ -194,6 +195,7 @@ fun ArticlesScreen() {
 private fun ArticleReader(
     title: String,
     updated: String,
+    author: String,
     image: String,
     client: ArticleClient,
     blocks: List<ArticleBlock>,
@@ -209,7 +211,7 @@ private fun ArticleReader(
         item {
             OphiaHeader(onBack = onBack)
             Spacer(Modifier.height(8.dp))
-            PageTitle(title = title, subtitle = updated)
+            PageTitle(title = title, subtitle = articleCredit(author, updated))
             Spacer(Modifier.height(8.dp))
             ArticleThumb(client, image, Modifier.fillMaxWidth().height(180.dp))
         }
@@ -241,6 +243,10 @@ private fun ArticleReader(
             }
         }
     }
+}
+
+private fun articleCredit(author: String, updated: String): String {
+    return listOf(author, updated).filter { it.isNotBlank() }.joinToString(" · ")
 }
 
 @Composable
