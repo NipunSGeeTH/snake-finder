@@ -54,7 +54,6 @@ import com.snakeid.platform.ModelStore
 import com.snakeid.platform.PlatformBackHandler
 import com.snakeid.platform.SnakeClassifier
 import com.snakeid.platform.bundledText
-import com.snakeid.platform.loadBundledSample
 import com.snakeid.platform.rememberImagePicker
 import com.snakeid.ui.ArticlesScreen
 import com.snakeid.ui.FieldGuideScreen
@@ -269,15 +268,6 @@ fun App() {
                             activeModelId = activeModelId,
                             onLaunchCamera = { picker.launchCamera() },
                             onLaunchGallery = { picker.launchGallery() },
-                            onSelectSample = { sampleId ->
-                                val bytes = loadBundledSample(sampleId)
-                                if (bytes == null) {
-                                    error = "That sample photo is missing from the app."
-                                } else {
-                                    val title = com.snakeid.domain.samplePhotos.find { it.id == sampleId }?.title ?: sampleId
-                                    identify(bytes, "Sample: $title")
-                                }
-                            },
                             onOpenModel = { open(Place.MODEL) },
                             onOpenSpecies = { speciesDialog = it }
                         )

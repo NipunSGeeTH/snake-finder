@@ -6,7 +6,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,24 +18,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,9 +45,7 @@ import com.snakeid.domain.ResultKind
 import com.snakeid.domain.SnakeSpecies
 import com.snakeid.domain.SnakeSpeciesDatabase
 import com.snakeid.domain.VenomStatus
-import com.snakeid.domain.samplePhotos
 import com.snakeid.platform.loadAssetBytes
-import com.snakeid.platform.loadBundledSample
 import com.snakeid.platform.toImageBitmap
 
 @Composable
@@ -68,14 +57,11 @@ fun IdentifyScreen(
     activeModelId: String,
     onLaunchCamera: () -> Unit,
     onLaunchGallery: () -> Unit,
-    onSelectSample: (String) -> Unit,
     onOpenModel: () -> Unit,
     onOpenSpecies: (SnakeSpecies) -> Unit
 ) {
     val hero = remember { loadAssetBytes("brand/hero.jpg")?.toImageBitmap() }
     val photo = remember(imageBytes) { imageBytes?.toImageBitmap() }
-    var showAllSamples by remember { mutableStateOf(false) }
-    val samples = if (showAllSamples) samplePhotos else samplePhotos.take(3)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -183,27 +169,6 @@ fun IdentifyScreen(
             }
         }
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Try a bundled photo", fontWeight = FontWeight.SemiBold, color = Color.White)
-                    Text("Real photos kept in the app", color = Color(0xFF8AA394), fontSize = 12.sp)
-                }
-                TextButton(onClick = { showAllSamples = !showAllSamples }) {
-                    Text(if (showAllSamples) "Show less" else "View all", color = MutedGreen)
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(samples) { sample ->
-                    SampleCard(sample.id, sample.title) { if (!busy) onSelectSample(sample.id) }
-                }
-            }
-        }
-        item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 GlassFact("On device", "Runs here", Modifier.weight(1f))
                 GlassFact("Offline", "No network", Modifier.weight(1f))
@@ -235,44 +200,6 @@ fun IdentifyScreen(
             item { Text("Model scores", fontWeight = FontWeight.Bold, color = Color.White) }
             items(predictions) { prediction ->
                 PredictionCard(prediction, onOpenSpecies)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SampleCard(id: String, title: String, onClick: () -> Unit) {
-    val image = remember(id) { loadBundledSample(id)?.toImageBitmap() }
-    val species = SnakeSpeciesDatabase.speciesList.find { it.id == id }
-    val press = remember { MutableInteractionSource() }
-    Column(
-        modifier = Modifier
-            .width(156.dp)
-            .pressScale(press)
-            .liquidGlass(RoundedCornerShape(18.dp))
-            .clickable(interactionSource = press, indication = null, onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().height(108.dp).background(Color(0xFF101614)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (image != null) {
-                Image(bitmap = image, contentDescription = title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            }
-        }
-        Column(modifier = Modifier.padding(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(species?.let { venomColor(it.venomStatus) } ?: Color.Gray)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, color = Color.White)
-            }
-            if (species != null) {
-                Text(species.scientificName, fontSize = 11.sp, color = Color(0xFFB7C4BC), fontStyle = FontStyle.Italic, maxLines = 1)
             }
         }
     }
