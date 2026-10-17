@@ -78,8 +78,8 @@ class ArticleClient(private val cache: TextCache = TextCache()) {
 
     private companion object {
         val roots = listOf(
-            "https://nipunsgeeth.github.io/snake-finder",
-            "https://raw.githubusercontent.com/NipunSGeeTH/snake-finder/main/docs"
+            "https://nipunsgeeth.github.io/ophia-articles",
+            "https://raw.githubusercontent.com/NipunSGeeTH/ophia-articles/main"
         )
     }
 }

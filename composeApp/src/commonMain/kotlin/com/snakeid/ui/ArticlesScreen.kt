@@ -140,7 +140,7 @@ fun ArticlesScreen() {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Articles", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Published as markdown on GitHub. Refresh to see edits.",
+                        "Published separately from the app. Refresh to see edits.",
                         color = Color.Gray,
                         fontSize = 12.sp
                     )
