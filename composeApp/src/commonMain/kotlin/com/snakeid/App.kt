@@ -3,7 +3,6 @@
 package com.snakeid
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -68,15 +67,16 @@ import kotlinx.coroutines.withContext
 private enum class Place(val depth: Int) {
     IDENTIFY(0),
     ARTICLES(0),
-    SETTINGS(1),
-    GUIDE(2),
-    HISTORY(2),
-    MODEL(2)
+    SETTINGS(0),
+    GUIDE(1),
+    HISTORY(1),
+    MODEL(1)
 }
 
 private enum class RootTab(val title: String, val icon: String, val place: Place) {
     IDENTIFY("Identify", "◎", Place.IDENTIFY),
-    ARTICLES("Articles", "✎", Place.ARTICLES)
+    ARTICLES("Articles", "✎", Place.ARTICLES),
+    SETTINGS("Settings", "⚙", Place.SETTINGS)
 }
 
 @Composable
@@ -189,37 +189,26 @@ fun App() {
                         fontSize = 17.sp,
                         letterSpacing = (-0.3).sp
                     )
-                    Spacer(Modifier.weight(1f))
-                    if (place.depth == 0) {
-                        TextButton(onClick = { open(Place.SETTINGS) }) {
-                            Text("Settings", fontSize = 15.sp)
-                        }
-                    }
                 }
             },
             bottomBar = {
-                AnimatedVisibility(
-                    visible = place.depth == 0,
-                    enter = fadeIn(appleFade()),
-                    exit = fadeOut(appleFade())
-                ) {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                        RootTab.entries.forEach { item ->
-                            NavigationBarItem(
-                                selected = place == item.place,
-                                onClick = { showRoot(item.place) },
-                                icon = { Text(item.icon, fontSize = 16.sp) },
-                                label = {
-                                    Text(
-                                        item.title,
-                                        fontSize = 12.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        fontWeight = if (place == item.place) FontWeight.SemiBold else FontWeight.Normal
-                                    )
-                                }
-                            )
-                        }
+                val selected = stack.firstOrNull { it.depth == 0 } ?: Place.IDENTIFY
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    RootTab.entries.forEach { item ->
+                        NavigationBarItem(
+                            selected = selected == item.place,
+                            onClick = { showRoot(item.place) },
+                            icon = { Text(item.icon, fontSize = 16.sp) },
+                            label = {
+                                Text(
+                                    item.title,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontWeight = if (selected == item.place) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
+                        )
                     }
                 }
             }
