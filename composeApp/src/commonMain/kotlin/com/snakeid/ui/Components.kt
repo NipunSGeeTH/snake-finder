@@ -55,7 +55,7 @@ fun StatusBadge(status: VenomStatus) {
     Surface(color = background, shape = RoundedCornerShape(6.dp)) {
         Text(
             status.badge,
-            color = if (status == VenomStatus.MILDLY_VENOMOUS) Color.Black else Color.White,
+            color = if (status == VenomStatus.MILDLY_VENOMOUS) Color(0xFF1A1400) else Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = 10.sp,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

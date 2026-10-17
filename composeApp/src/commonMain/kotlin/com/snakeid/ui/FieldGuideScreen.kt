@@ -61,7 +61,7 @@ fun FieldGuideScreen(onSelectSpecies: (SnakeSpecies) -> Unit) {
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Name, local name, or habitat") },
+                placeholder = { Text("Name, local name, or habitat", color = Color(0xFFB7C4BC)) },
                 shape = RoundedCornerShape(18.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MutedGreen,

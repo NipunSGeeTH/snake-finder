@@ -165,7 +165,7 @@ fun IdentifyScreen(
                             onClick = onLaunchCamera
                         ),
                     contentAlignment = Alignment.Center
-                ) { Text("Take photo", fontWeight = FontWeight.Bold, color = Color(0xFF04210F)) }
+                ) { Text("Take photo", fontWeight = FontWeight.Bold, color = Color.White) }
                 Box(
                     modifier = Modifier
                         .weight(1f)

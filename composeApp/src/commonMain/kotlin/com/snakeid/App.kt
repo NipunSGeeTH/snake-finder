@@ -26,7 +26,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -169,7 +171,7 @@ fun App() {
         primaryContainer = Color(0xFF1B5E20),
         onPrimaryContainer = Color.White,
         secondary = Color(0xFF81C784),
-        onSecondary = Color(0xFF04210F),
+        onSecondary = Color.White,
         background = ScreenBackground,
         onBackground = Color(0xFFE8F0EB),
         surface = Color(0xFF1B1E1C),
@@ -236,6 +238,7 @@ fun App() {
                 }
             }
         ) { padding ->
+            CompositionLocalProvider(LocalContentColor provides Color(0xFFE8F0EB)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -346,6 +349,7 @@ fun App() {
                         onDismiss = { speciesDialog = null }
                     )
                 }
+            }
             }
         }
     }
