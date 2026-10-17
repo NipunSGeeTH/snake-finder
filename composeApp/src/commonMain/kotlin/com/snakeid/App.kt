@@ -46,7 +46,7 @@ import com.snakeid.platform.SnakeClassifier
 import com.snakeid.platform.bundledText
 import com.snakeid.platform.loadBundledSample
 import com.snakeid.platform.rememberImagePicker
-import com.snakeid.ui.EmergencyScreen
+import com.snakeid.ui.ArticlesScreen
 import com.snakeid.ui.FieldGuideScreen
 import com.snakeid.ui.HistoryScreen
 import com.snakeid.ui.IdentifyScreen
@@ -61,8 +61,8 @@ import kotlinx.coroutines.withContext
 private enum class AppTab(val title: String, val icon: String) {
     IDENTIFY("Identify", "🐍"),
     GUIDE("Guide", "📖"),
-    EMERGENCY("First aid", "🚨"),
-    MODEL("Model", "📦"),
+    ARTICLES("Articles", "✎"),
+    MODEL("Model", "▣"),
     HISTORY("History", "🕒")
 }
 
@@ -140,38 +140,6 @@ fun App() {
 
     MaterialTheme(colorScheme = colors) {
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(tab.icon, fontSize = 22.sp)
-                            Spacer(Modifier.width(10.dp))
-                            Column {
-                                Text(tabTitle(tab), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    if (activeModelId == ModelCatalog.WIDE) "Wide catalog · 135 species" else "Offline · 14-class model",
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-                    actions = {
-                        if (tab != AppTab.EMERGENCY) {
-                            FilledTonalButton(
-                                onClick = { tab = AppTab.EMERGENCY },
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = Color(0xFFB71C1C),
-                                    contentColor = Color.White
-                                ),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                modifier = Modifier.padding(end = 8.dp)
-                            ) { Text("SOS", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
-                        }
-                    }
-                )
-            },
             bottomBar = {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     AppTab.entries.forEach { item ->
@@ -205,6 +173,7 @@ fun App() {
                         predictions = predictions,
                         busy = busy,
                         error = error,
+                        activeModelId = activeModelId,
                         onLaunchCamera = { picker.launchCamera() },
                         onLaunchGallery = { picker.launchGallery() },
                         onSelectSample = { sampleId ->
@@ -216,12 +185,11 @@ fun App() {
                                 identify(bytes, "Sample: $title")
                             }
                         },
-                        onOpenEmergency = { tab = AppTab.EMERGENCY },
                         onOpenModel = { tab = AppTab.MODEL },
                         onOpenSpecies = { speciesDialog = it }
                     )
                     AppTab.GUIDE -> FieldGuideScreen(onSelectSpecies = { speciesDialog = it })
-                    AppTab.EMERGENCY -> EmergencyScreen()
+                    AppTab.ARTICLES -> ArticlesScreen()
                     AppTab.MODEL -> ModelScreen(
                         activeId = activeModelId,
                         readyIds = readyIds,
@@ -277,11 +245,7 @@ fun App() {
                 speciesDialog?.let { species ->
                     SpeciesDetailDialog(
                         species = species,
-                        onDismiss = { speciesDialog = null },
-                        onOpenEmergency = {
-                            speciesDialog = null
-                            tab = AppTab.EMERGENCY
-                        }
+                        onDismiss = { speciesDialog = null }
                     )
                 }
             }
@@ -289,10 +253,4 @@ fun App() {
     }
 }
 
-private fun tabTitle(tab: AppTab): String = when (tab) {
-    AppTab.IDENTIFY -> "SnakeID"
-    AppTab.GUIDE -> "Field guide"
-    AppTab.EMERGENCY -> "Emergency first aid"
-    AppTab.MODEL -> "On-device model"
-    AppTab.HISTORY -> "History"
-}
+

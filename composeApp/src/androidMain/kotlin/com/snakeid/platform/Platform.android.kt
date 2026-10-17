@@ -41,6 +41,14 @@ actual fun ByteArray.toImageBitmap(): ImageBitmap? {
     return decodeOrientedBitmap(this, maxSide = 1280)?.asImageBitmap()
 }
 
+actual fun loadAssetBytes(assetPath: String): ByteArray? {
+    return try {
+        appContext.assets.open(assetPath).use { it.readBytes() }
+    } catch (error: Exception) {
+        null
+    }
+}
+
 actual fun loadBundledSample(sampleId: String): ByteArray? {
     val filename = when (sampleId) {
         "naja_naja" -> "samples/cobra.jpg"

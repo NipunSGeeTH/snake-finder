@@ -27,8 +27,7 @@ import com.snakeid.domain.VenomStatus
 @Composable
 fun SpeciesDetailDialog(
     species: SnakeSpecies,
-    onDismiss: () -> Unit,
-    onOpenEmergency: () -> Unit
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -61,24 +60,13 @@ fun SpeciesDetailDialog(
                 Text("Habitat and behavior", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(species.habitat, fontSize = 12.sp, color = Color.LightGray)
                 Text(species.behavior, fontSize = 12.sp, color = Color.LightGray)
-                Text("If bitten", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF8A80))
-                Text(species.biteSymptoms, fontSize = 12.sp, color = Color.LightGray)
-                Text(species.firstAidAdvice, fontSize = 12.sp, color = Color.LightGray)
                 if (species.lookAlikes.isNotEmpty()) {
                     Text("Look-alikes", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFFCC80))
                     Text(species.lookAlikes, fontSize = 12.sp, color = Color(0xFFFFE0B2), fontStyle = FontStyle.Italic)
                 }
             }
         },
-        confirmButton = {
-            if (species.venomStatus != VenomStatus.NON_VENOMOUS) {
-                Button(
-                    onClick = onOpenEmergency,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                    shape = RoundedCornerShape(8.dp)
-                ) { Text("Emergency steps") }
-            }
-        },
+        confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Close") }
         }

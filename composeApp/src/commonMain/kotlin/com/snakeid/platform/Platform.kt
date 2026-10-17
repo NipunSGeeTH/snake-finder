@@ -38,8 +38,17 @@ expect fun ByteArray.toImageBitmap(): ImageBitmap?
 
 expect fun loadBundledSample(sampleId: String): ByteArray?
 
+expect fun loadAssetBytes(assetPath: String): ByteArray?
+
 expect fun nowMillis(): Long
 
 expect fun formatWhen(epochMs: Long): String
 
 expect fun dialPhone(number: String)
+
+expect suspend fun fetchText(url: String): String
+
+expect class TextCache() {
+    fun read(key: String): String?
+    fun write(key: String, text: String)
+}

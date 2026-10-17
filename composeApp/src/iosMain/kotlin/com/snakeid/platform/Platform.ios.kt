@@ -15,9 +15,21 @@ actual fun formatWhen(epochMs: Long): String = epochMs.toString()
 
 actual fun dialPhone(number: String) = Unit
 
+actual suspend fun fetchText(url: String): String = error("Articles load on Android in this build.")
+
+actual class TextCache actual constructor() {
+    private val values = mutableMapOf<String, String>()
+    actual fun read(key: String): String? = values[key]
+    actual fun write(key: String, text: String) {
+        values[key] = text
+    }
+}
+
 actual fun ByteArray.toImageBitmap(): ImageBitmap? = null
 
 actual fun loadBundledSample(sampleId: String): ByteArray? = null
+
+actual fun loadAssetBytes(assetPath: String): ByteArray? = null
 
 @Composable
 actual fun rememberImagePicker(onImagePicked: (ByteArray) -> Unit): ImagePickerLauncher {
