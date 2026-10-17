@@ -79,7 +79,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="Debug APK for SnakeID. It contains the built-in 14-class offline model only. Install with: adb install -r snakeid-debug.apk. Also attached: unit-test report, model check log, and the six sample photos."
+          SHA="${GITHUB_SHA::7}"
+          DATE="$(date -u +%Y-%m-%d)"
+          TITLE="Ophia debug APK · ${DATE} · ${SHA}"
+          NOTES="Debug APK for Ophia, built from main at ${SHA} on ${DATE}. Install with: adb install -r snakeid-debug.apk. Also attached: unit-test report, model check log, and sample photos."
           if gh release view latest-apk >/dev/null 2>&1; then
             gh release upload latest-apk \
               dist/snakeid-debug.apk \
@@ -87,14 +90,14 @@ jobs:
               dist/model-check.txt \
               dist/sample-photos.zip \
               --clobber
-            gh release edit latest-apk --notes "$NOTES" --latest
+            gh release edit latest-apk --title "$TITLE" --notes "$NOTES" --latest
           else
             gh release create latest-apk \
               dist/snakeid-debug.apk \
               dist/unit-tests.zip \
               dist/model-check.txt \
               dist/sample-photos.zip \
-              --title "SnakeID latest debug APK" \
+              --title "$TITLE" \
               --notes "$NOTES" \
               --latest \
               --target main
