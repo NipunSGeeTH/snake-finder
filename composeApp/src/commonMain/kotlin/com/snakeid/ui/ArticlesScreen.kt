@@ -214,7 +214,11 @@ private fun ArticleReader(
         if (error != null) {
             item { Text(error, color = Color(0xFFFF8A80)) }
         }
-        items(blocks) { block ->
+        val bodyBlocks = if (
+            blocks.firstOrNull()?.kind == ArticleBlock.Kind.HEADING &&
+            blocks.first().text.equals(title, ignoreCase = true)
+        ) blocks.drop(1) else blocks
+        items(bodyBlocks) { block ->
             when (block.kind) {
                 ArticleBlock.Kind.HEADING -> Text(block.text, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 ArticleBlock.Kind.PARAGRAPH -> Text(block.text, color = Color(0xFFE0E0E0), fontSize = 15.sp)
